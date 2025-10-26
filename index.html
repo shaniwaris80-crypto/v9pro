@@ -3,33 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ARSLAN PRO V10</title>
+  <title>ARSLAN PRO V9</title>
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-
   <!-- Librerías -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 </head>
 <body>
-  <!-- Splash (sin PIN) -->
+  <!-- Splash -->
   <div id="splash">
-    <img src="logo-kiwi.png" alt="Kiwi" />
-    <h2>ARSLAN PRO V10</h2>
+    <img src="logo-kiwi.png" alt="Kiwi">
+    <h2>ARSLAN PRO V9</h2>
   </div>
 
   <!-- Header -->
   <header>
     <div class="brand">
       <img src="logo-kiwi.png" alt="Kiwi">
-      <h1>ARSLAN PRO V10</h1>
-    </div>
-    <div class="header-actions">
-      <label class="switch" title="Modo oscuro">
-        <input id="themeToggle" type="checkbox">
-        <span class="slider"></span>
-      </label>
+      <h1>ARSLAN PRO V9</h1>
     </div>
   </header>
 
@@ -56,14 +48,6 @@
             <label>Dirección <input id="provDir"></label>
             <label>Teléfono <input id="provTel"></label>
             <label>Email <input id="provEmail" type="email"></label>
-          </div>
-          <div class="row gap">
-            <label>Firma proveedor (png/jpg)
-              <input id="firmaProvFile" type="file" accept="image/*">
-            </label>
-            <label>Firma cliente (png/jpg)
-              <input id="firmaCliFile" type="file" accept="image/*">
-            </label>
           </div>
         </div>
 
@@ -151,14 +135,12 @@
           <div class="row gap">
             <button id="btnGuardar" class="btn green">💾 Guardar</button>
             <button id="btnImprimir" class="btn">🖨️ PDF</button>
-            <button id="btnShareWA" class="btn">🟢 WhatsApp</button>
-            <button id="btnShareMail" class="btn">✉️ Email</button>
             <button id="btnNueva" class="btn ghost">🆕 Nueva</button>
           </div>
         </div>
       </div>
 
-      <!-- Panel historial precios -->
+      <!-- Panel de historial de precios -->
       <div id="pricePanel" hidden>
         <div class="pp-title">Historial de precios</div>
         <div id="ppBody"></div>
@@ -194,17 +176,6 @@
           <tbody></tbody>
         </table>
 
-        <div class="p-signs">
-          <div>
-            <div>Firma proveedor</div>
-            <img id="p-firma-prov" alt="Firma proveedor">
-          </div>
-          <div>
-            <div>Firma cliente</div>
-            <img id="p-firma-cli" alt="Firma cliente">
-          </div>
-        </div>
-
         <div class="p-totals">
           <div>Subtotal: <strong id="p-sub"></strong></div>
           <div>Transporte: <strong id="p-tra"></strong></div>
@@ -236,8 +207,6 @@
       <div class="row-between v-center">
         <h2>Facturas</h2>
         <div class="row gap">
-          <input type="date" id="fechaDesde">
-          <input type="date" id="fechaHasta">
           <select id="filtroEstado">
             <option value="todas">Todas</option>
             <option value="pendiente">Pendiente</option>
@@ -250,7 +219,6 @@
         </div>
       </div>
       <div id="listaFacturas" class="list"></div>
-      <div id="facturasTotales" class="list-total"></div>
     </section>
 
     <!-- PRODUCTOS -->
@@ -266,10 +234,8 @@
         <div class="row gap">
           <button id="btnResetCliente" class="btn ghost">Reset deuda cliente</button>
           <button id="btnResetGlobal" class="btn ghost">Reset deudas global</button>
-          <button id="btnBackup" class="btn">💾 Backup JSON</button>
-          <button id="btnRestore" class="btn">⤴️ Restaurar JSON</button>
-          <button id="btnBackupZip" class="btn green">🧩 Backup ZIP</button>
-          <button id="btnRestoreZip" class="btn">⤴️ Restaurar ZIP</button>
+          <button id="btnBackup" class="btn">💾 Backup</button>
+          <button id="btnRestore" class="btn">⤴️ Restaurar</button>
         </div>
       </div>
 
