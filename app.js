@@ -973,3 +973,134 @@ document.head.appendChild(styleBW);
 /* ============================================================
   Fin del bloque de mejoras simples 🍃
 ============================================================ */
+/* ============================================================
+🥝  ARSLAN PRO – Add-ons Pack 2 (funciones inteligentes)
+============================================================ */
+
+/* 1️⃣  Recordatorio automático de cobros pendientes (una vez al día) */
+function recordarPendientes(){
+  const data=JSON.parse(localStorage.getItem('arslan_v9_facturas')||'[]');
+  const impagos=data.filter(f=>f.estado!=='pagado');
+  if(impagos.length>0){
+    const totalImpagos=impagos.reduce((a,b)=>a+(b.totals?.pendiente||0),0);
+    const msg=`📢 Tienes ${impagos.length} facturas pendientes por ${totalImpagos.toFixed(2)} €`;
+    toast(msg);
+  }
+}
+// 1 recordatorio cada 24 h
+if(!localStorage.getItem('arslan_last_reminder') ||
+   Date.now()-localStorage.getItem('arslan_last_reminder')>24*60*60*1000){
+  recordarPendientes();
+  localStorage.setItem('arslan_last_reminder',Date.now());
+}
+
+/* 2️⃣  Búsqueda rápida de facturas por cliente o número */
+const buscadorGlobal=document.createElement('input');
+buscadorGlobal.placeholder='🔍 Buscar factura o cliente...';
+buscadorGlobal.style.cssText='position:fixed;top:10px;left:10px;width:200px;padding:6px;border-radius:6px;border:1px solid #ccc;z-index:9999;font-family:Poppins;';
+document.body.appendChild(buscadorGlobal);
+buscadorGlobal.addEventListener('input',()=>{
+  const q=buscadorGlobal.value.toLowerCase();
+  const data=JSON.parse(localStorage.getItem("arslan_v9_facturas")||"[]");
+  if(!q){buscadorGlobal.style.background="white";return;}
+  const res=data.filter(f=>(f.cliente?.nombre||"").toLowerCase().includes(q)|| (f.numero||"").toLowerCase().includes(q));
+  buscadorGlobal.style.background=res.length>0?'#e8f7ee':'#fde2e2';
+});
+
+/* 3️⃣  Copia de seguridad automática semanal */
+function backupSemanal(){
+  const hoy=new Date(); const dia=hoy.getDay(); // 0=domingo
+  if(dia===0){ // domingo
+    const payload={
+      clientes:JSON.parse(localStorage.getItem('arslan_v9_clientes')||'[]'),
+      productos:JSON.parse(localStorage.getItem('arslan_v9_productos')||'[]'),
+      facturas:JSON.parse(localStorage.getItem('arslan_v9_facturas')||'[]'),
+      fecha:hoy.toISOString()
+    };
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=`backup-semanal-${hoy.toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('💾 Copia de seguridad semanal descargada');
+  }
+}
+backupSemanal();
+
+/* 4️⃣  Sonido corto al guardar factura */
+function sonidoGuardar(){
+  const audio=new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
+  audio.volume=0.2; audio.play().catch(()=>{});
+}
+document.querySelector('#btnGuardar')?.addEventListener('click',()=>setTimeout(sonidoGuardar,800));
+
+/* 5️⃣  Color dinámico de totales según estado */
+function colorTotales(){
+  const totalEl=document.querySelector('#total');
+  if(!totalEl)return;
+  const texto=totalEl.textContent.replace(',','.').replace('€','').trim();
+  const val=parseFloat(texto)||0;
+  totalEl.style.color = val>1000 ? '#dc2626' : (val>300?'#f59e0b':'#1f9d55');
+}
+setInterval(colorTotales,1500);
+
+/* 6️⃣  Lector de voz (opcional) para notificaciones */
+function hablar(msg){
+  try{
+    const s=new SpeechSynthesisUtterance(msg);
+    s.lang='es-ES';
+    s.rate=1.1;
+    speechSynthesis.speak(s);
+  }catch{}
+}
+document.querySelector('#btnGuardar')?.addEventListener('click',()=>setTimeout(()=>hablar('Factura guardada correctamente'),1200));
+
+/* 7️⃣  Bloqueo de pantalla al estar inactivos más de 10 min */
+let inactivo;
+function resetInactividad(){
+  clearTimeout(inactivo);
+  inactivo=setTimeout(()=>{
+    toast('🔒 Bloqueo por inactividad — toca para continuar');
+    document.body.style.filter='blur(3px)';
+    const cover=document.createElement('div');
+    cover.id='lockCover';
+    cover.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:center;justify-content:center;color:#fff;font-family:Poppins;cursor:pointer;';
+    cover.innerHTML='<div>🔓 Tocar para desbloquear</div>';
+    cover.addEventListener('click',()=>{document.body.style.filter='none';cover.remove();});
+    document.body.appendChild(cover);
+  },600000); // 10 min
+}
+['click','mousemove','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,resetInactividad));
+resetInactividad();
+
+/* 8️⃣  Indicador de conexión (offline/online) */
+const indicador=document.createElement('div');
+indicador.id='net';
+indicador.style.cssText='position:fixed;bottom:15px;left:15px;padding:5px 10px;font-size:12px;border-radius:6px;font-family:Poppins;z-index:9999;background:#2563eb;color:#fff;';
+document.body.appendChild(indicador);
+function actualizarNet(){indicador.textContent=navigator.onLine?'🟢 Online':'🔴 Sin conexión';indicador.style.background=navigator.onLine?'#1f9d55':'#dc2626';}
+window.addEventListener('online',actualizarNet);
+window.addEventListener('offline',actualizarNet);
+actualizarNet();
+
+/* 9️⃣  Pulsación larga sobre total = mostrar desglose rápido */
+const totalBox=document.querySelector('#total');
+if(totalBox){
+  totalBox.addEventListener('mousedown',()=>{totalBox.style.transform='scale(1.1)';});
+  totalBox.addEventListener('mouseup',()=>{
+    totalBox.style.transform='scale(1)';
+    const sub=document.querySelector('#subtotal')?.textContent||'';
+    const iva=document.querySelector('#iva')?.textContent||'';
+    const tra=document.querySelector('#transp')?.textContent||'';
+    toast(`Subtotal ${sub} · Transp ${tra} · IVA ${iva}`);
+  });
+}
+
+/* 🔟  Ocultar automáticamente notificaciones tras PDF */
+window.addEventListener('beforeprint',()=>{document.querySelectorAll('#btnColor,#btnUp,#reloj,#net').forEach(el=>el&&(el.style.display='none'));});
+window.addEventListener('afterprint',()=>{document.querySelectorAll('#btnColor,#btnUp,#reloj,#net').forEach(el=>el&&(el.style.display=''));});
+
+/* ============================================================
+Fin Add-ons Pack 2 🍃 Funciones inteligentes
+============================================================ */
