@@ -3,38 +3,60 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ARSLAN PRO V15 · Facturación Frutería</title>
+  <title>ARSLAN V9 PRO · Facturación de Frutería</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
   <meta name="color-scheme" content="light only" />
+  <!-- Chart.js y html2pdf -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
 </head>
 <body>
+  <!-- Splash con logo girando -->
+  <div id="splash">
+    <svg class="logo-big" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-label="Logo Kiwi">
+      <defs>
+        <radialGradient id="gradKiwiSplash" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#4ade80"/>
+          <stop offset="100%" stop-color="#15803d"/>
+        </radialGradient>
+      </defs>
+      <circle cx="32" cy="32" r="30" fill="url(#gradKiwiSplash)" stroke="#15803d" stroke-width="3"/>
+      <circle cx="32" cy="32" r="14" fill="#ffffff"/>
+      <circle cx="32" cy="20" r="2" fill="#1f2937"/>
+      <circle cx="42" cy="24" r="2" fill="#1f2937"/>
+      <circle cx="44" cy="34" r="2" fill="#1f2937"/>
+      <circle cx="32" cy="44" r="2" fill="#1f2937"/>
+      <circle cx="22" cy="40" r="2" fill="#1f2937"/>
+      <circle cx="20" cy="28" r="2" fill="#1f2937"/>
+    </svg>
+    <h1>ARSLAN V9 PRO</h1>
+    <p>Facturación de Frutería</p>
+  </div>
+
   <header class="app-header">
     <div class="brand">
-      <<svg class="logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <defs>
-    <radialGradient id="gradKiwi" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#4ade80"/>
-      <stop offset="100%" stop-color="#15803d"/>
-    </radialGradient>
-  </defs>
-  <!-- Exterior verde degradado -->
-  <circle cx="32" cy="32" r="30" fill="url(#gradKiwi)" stroke="#15803d" stroke-width="3" />
-  <!-- Interior blanco -->
-  <circle cx="32" cy="32" r="14" fill="#ffffff" />
-  <!-- Semillas -->
-  <circle cx="32" cy="20" r="2" fill="#1f2937" />
-  <circle cx="42" cy="24" r="2" fill="#1f2937" />
-  <circle cx="44" cy="34" r="2" fill="#1f2937" />
-  <circle cx="32" cy="44" r="2" fill="#1f2937" />
-  <circle cx="22" cy="40" r="2" fill="#1f2937" />
-  <circle cx="20" cy="28" r="2" fill="#1f2937" />
-</svg>
-" alt="KIWI" class="logo" onerror="this.classList.add('fallback')">
+      <!-- Logo en header -->
+      <svg class="logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true">
+        <defs>
+          <radialGradient id="gradKiwi" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#4ade80"/>
+            <stop offset="100%" stop-color="#15803d"/>
+          </radialGradient>
+        </defs>
+        <circle cx="32" cy="32" r="30" fill="url(#gradKiwi)" stroke="#15803d" stroke-width="3"/>
+        <circle cx="32" cy="32" r="14" fill="#ffffff"/>
+        <circle cx="32" cy="20" r="2" fill="#1f2937"/>
+        <circle cx="42" cy="24" r="2" fill="#1f2937"/>
+        <circle cx="44" cy="34" r="2" fill="#1f2937"/>
+        <circle cx="32" cy="44" r="2" fill="#1f2937"/>
+        <circle cx="22" cy="40" r="2" fill="#1f2937"/>
+        <circle cx="20" cy="28" r="2" fill="#1f2937"/>
+      </svg>
       <div class="brand-text">
-        <h1>ARSLAN PRO V15</h1>
-        <span>Gestión & Facturación de Frutería</span>
+        <h1>ARSLAN V9 PRO</h1>
+        <span>Gestión & Facturación</span>
       </div>
     </div>
     <nav class="tabs">
@@ -43,7 +65,6 @@
       <button class="tab" data-tab="facturas">Facturas</button>
       <button class="tab" data-tab="resumen">Resumen</button>
       <button class="tab" data-tab="productos">Productos</button>
-      <button class="tab" data-tab="estadisticas">Estadísticas</button>
     </nav>
   </header>
 
@@ -86,15 +107,14 @@
           </div>
         </div>
 
-        <!-- Cabecera de columnas -->
         <div class="lineas-head">
           <span>Producto</span><span>Tipo</span><span>Cant.</span><span>Peso bruto</span><span>Tara</span><span>Peso neto</span><span>Precio</span><span>Origen</span><span>Importe</span><span></span>
         </div>
         <div id="lineas" class="lineas"></div>
         <div class="legend">
           <ul>
-            <li><strong>Peso neto</strong> = bruto − tara (si indicas peso). Si no, para <b>caja</b> usa <em>cant. × kg/caja</em>. Para <b>kg</b> usa la cantidad como kg. Para <b>unidad</b>, neto = cantidad.</li>
-            <li>El <b>Importe</b> usa <em>neto</em> cuando el tipo es <b>kg</b> o <b>caja</b>; y <em>cantidad</em> cuando es <b>unidad</b>.</li>
+            <li>Peso neto = bruto − tara. Si no hay peso, para <b>caja</b> usa (cant × kg/caja); para <b>kg</b> toma cantidad como kg.</li>
+            <li>Importe = neto × precio (kg/caja) o cantidad × precio (unidad).</li>
           </ul>
         </div>
       </div>
@@ -104,12 +124,12 @@
           <h2>Condiciones</h2>
           <div class="rows">
             <label class="check"><input type="checkbox" id="chkTransporte"> +10% Transporte</label>
-            <label class="check"><input type="checkbox" id="chkIvaIncluido" checked> IVA 4% ya incluido (solo mostrar)</label>
+            <label class="check"><input type="checkbox" id="chkIvaIncluido" checked> IVA 4% incluido (solo mostrar)</label>
             <div class="row-inline">
               <label>Estado:</label>
               <select id="estado">
                 <option value="pendiente">Pendiente</option>
-                <option value="parcial">Parcialmente pagado</option>
+                <option value="parcial">Parcial</option>
                 <option value="pagado">Pagado</option>
               </select>
             </div>
@@ -134,10 +154,9 @@
             <div class="kv"><span>Pagado</span><strong id="mostPagado">0,00 €</strong></div>
             <div class="kv"><span>Pendiente</span><strong id="pendiente">0,00 €</strong></div>
           </div>
-
           <div class="buttons">
             <button id="btnGuardar" class="btn primary">Guardar factura</button>
-            <button id="btnImprimir" class="btn">Imprimir / PDF</button>
+            <button id="btnImprimir" class="btn">Imprimir</button>
             <button id="btnNueva" class="btn ghost">Nueva factura</button>
           </div>
         </div>
@@ -149,12 +168,29 @@
         <div class="pp-body" id="ppBody">—</div>
       </div>
 
-      <!-- DOCUMENTO IMPRESIÓN COMPACTO -->
+      <!-- DOCUMENTO IMPRESIÓN / PDF -->
       <section id="printArea" class="print-doc">
         <div class="print-header">
           <div class="print-brand">
+            <!-- Logo para impresión -->
+            <svg class="logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true">
+              <defs>
+                <radialGradient id="gradKiwiPrint" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#4ade80"/>
+                  <stop offset="100%" stop-color="#15803d"/>
+                </radialGradient>
+              </defs>
+              <circle cx="32" cy="32" r="30" fill="url(#gradKiwiPrint)" stroke="#15803d" stroke-width="3"/>
+              <circle cx="32" cy="32" r="14" fill="#ffffff"/>
+              <circle cx="32" cy="20" r="2" fill="#1f2937"/>
+              <circle cx="42" cy="24" r="2" fill="#1f2937"/>
+              <circle cx="44" cy="34" r="2" fill="#1f2937"/>
+              <circle cx="32" cy="44" r="2" fill="#1f2937"/>
+              <circle cx="22" cy="40" r="2" fill="#1f2937"/>
+              <circle cx="20" cy="28" r="2" fill="#1f2937"/>
+            </svg>
             <div>
-              <h1>ARSLAN PRO V15</h1>
+              <h1>ARSLAN V9 PRO</h1>
               <small>Factura</small>
             </div>
           </div>
@@ -199,7 +235,6 @@
         <div class="print-notes">
           <div><strong>Estado:</strong> <span id="p-estado">—</span> · <strong>Pago:</strong> <span id="p-metodo">—</span></div>
           <div><strong>Obs.:</strong> <span id="p-obs">—</span></div>
-          <small>El IVA (4%) se muestra pero está incluido. Si aplica, el transporte añade 10% sobre el subtotal.</small>
         </div>
       </section>
     </section>
@@ -210,6 +245,7 @@
         <div class="header-row">
           <h2>Clientes</h2>
           <div class="row-inline">
+            <input id="buscarCliente" placeholder="Buscar por nombre o NIF..." />
             <button id="btnAddCliente" class="btn">Añadir</button>
             <button id="btnExportClientes" class="btn ghost">Exportar JSON</button>
             <button id="btnImportClientes" class="btn ghost">Importar JSON</button>
@@ -240,17 +276,36 @@
       </div>
     </section>
 
-    <!-- RESUMEN (Deudas) -->
+    <!-- RESUMEN (Totales + Deudas + Gráficos) -->
     <section class="panel" data-tab-panel="resumen">
       <div class="card">
-        <h2>Deudas</h2>
-        <div class="rows compact">
-          <div class="kv"><span>Total global pendiente</span> <strong id="resGlobal">0,00 €</strong></div>
+        <div class="header-row">
+          <h2>Resumen</h2>
+          <div class="row-inline">
+            <div class="kv"><span>Hoy:</span> <strong id="rHoy">0,00 €</strong></div>
+            <div class="kv"><span>Semana:</span> <strong id="rSemana">0,00 €</strong></div>
+            <div class="kv"><span>Mes:</span> <strong id="rMes">0,00 €</strong></div>
+            <div class="kv"><span>Total:</span> <strong id="rTotal">0,00 €</strong></div>
+            <button id="btnBackup" class="btn">Exportar copia</button>
+            <button id="btnRestore" class="btn ghost">Importar copia</button>
+          </div>
         </div>
-        <div id="resPorCliente" class="list"></div>
-        <div class="actions">
-          <button id="btnResetCliente" class="btn">Resetear deuda del cliente seleccionado</button>
-          <button id="btnResetGlobal" class="btn ghost">Resetear TODAS las deudas</button>
+        <div class="grid two">
+          <div>
+            <canvas id="chartDiario" class="chart" width="900" height="320"></canvas>
+          </div>
+          <div>
+            <canvas id="chartMensual" class="chart" width="900" height="320"></canvas>
+          </div>
+        </div>
+        <div class="card" style="margin-top:12px">
+          <h3>Deudas</h3>
+          <div class="rows compact"><div class="kv"><span>Total pendiente</span><strong id="resGlobal">0,00 €</strong></div></div>
+          <div id="resPorCliente" class="list"></div>
+          <div class="actions">
+            <button id="btnResetCliente" class="btn">Resetear deuda del cliente seleccionado</button>
+            <button id="btnResetGlobal" class="btn ghost">Resetear TODAS</button>
+          </div>
         </div>
       </div>
     </section>
@@ -272,28 +327,10 @@
         <div id="listaProductos" class="list"></div>
       </div>
     </section>
-
-    <!-- ESTADÍSTICAS -->
-    <section class="panel" data-tab-panel="estadisticas">
-      <div class="card">
-        <div class="header-row">
-          <h2>Estadísticas de ventas</h2>
-          <div class="row-inline">
-            <select id="range">
-              <option value="daily">Diaria (14 días)</option>
-              <option value="weekly">Semanal (12 semanas)</option>
-              <option value="monthly">Mensual (12 meses)</option>
-            </select>
-            <div class="kv"><span>Total generado:</span> <strong id="statTotal">0,00 €</strong></div>
-          </div>
-        </div>
-        <canvas id="chart" width="900" height="320" class="chart"></canvas>
-      </div>
-    </section>
   </main>
 
   <footer class="app-footer">
-    <small>ARSLAN PRO V15 — Blanco & Sombras Verdes — © 2025</small>
+    <small>ARSLAN V9 PRO — Diseño Blanco con Sombras Verdes Kiwi — © 2025</small>
   </footer>
 
   <script src="app.js"></script>
