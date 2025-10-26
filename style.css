@@ -3,10 +3,10 @@
   --text:#111111;
   --muted:#667085;
   --border:#e5e5e5;
-  --ok:#16a34a;     /* verde pagado */
-  --warn:#f59e0b;   /* ámbar parcial */
-  --bad:#dc2626;    /* rojo impagado */
-  --kiwi:#22c55e;   /* verde kiwi sombras */
+  --ok:#16a34a;
+  --warn:#f59e0b;
+  --bad:#dc2626;
+  --kiwi:#22c55e;
 }
 
 *{box-sizing:border-box}
@@ -134,7 +134,7 @@ input::placeholder{color:#999}
   @page { size: A4; margin: 10mm; }
   body *{visibility:hidden}
   #printArea, #printArea *{visibility:visible}
-  #printArea{position:absolute;left:0;top:0;width:100%;height: 277mm; overflow: hidden;} /* fuerza 1 página */
+  #printArea{position:absolute;left:0;top:0;width:100%;height: 277mm; overflow: hidden;}
   .print-table tbody{max-height: 130mm; display:block; overflow:hidden}
   .print-table thead, .print-table tfoot{display:table; width:100%}
   .print-table tbody tr{display:table; width:100%; table-layout:fixed}
@@ -150,4 +150,3 @@ input::placeholder{color:#999}
 .print-table th,.print-table td{border:1px solid var(--border);padding:6px;text-align:left}
 .print-table tfoot td.right{text-align:right}
 .print-table tfoot tr.total td{font-weight:700}
-
