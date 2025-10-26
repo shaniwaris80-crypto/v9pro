@@ -3,24 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ARSLAN PRO V10 ULTRA</title>
+  <title>ARSLAN PRO V10</title>
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+
   <!-- Librerías -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 </head>
 <body>
-  <!-- Splash + PIN -->
+  <!-- Splash (sin PIN) -->
   <div id="splash">
     <img src="logo-kiwi.png" alt="Kiwi" />
     <h2>ARSLAN PRO V10</h2>
-    <div id="pinBox">
-      <input id="pinInput" type="password" placeholder="PIN de acceso" />
-      <button id="pinBtn" class="btn green">Entrar</button>
-      <div id="pinMsg" class="pin-msg"></div>
-    </div>
   </div>
 
   <!-- Header -->
@@ -30,7 +26,7 @@
       <h1>ARSLAN PRO V10</h1>
     </div>
     <div class="header-actions">
-      <label class="switch">
+      <label class="switch" title="Modo oscuro">
         <input id="themeToggle" type="checkbox">
         <span class="slider"></span>
       </label>
@@ -62,16 +58,12 @@
             <label>Email <input id="provEmail" type="email"></label>
           </div>
           <div class="row gap">
-            <div>
-              <label>Firma proveedor (png/jpg)
-                <input id="firmaProvFile" type="file" accept="image/*">
-              </label>
-            </div>
-            <div>
-              <label>Firma cliente (png/jpg)
-                <input id="firmaCliFile" type="file" accept="image/*">
-              </label>
-            </div>
+            <label>Firma proveedor (png/jpg)
+              <input id="firmaProvFile" type="file" accept="image/*">
+            </label>
+            <label>Firma cliente (png/jpg)
+              <input id="firmaCliFile" type="file" accept="image/*">
+            </label>
           </div>
         </div>
 
@@ -166,7 +158,7 @@
         </div>
       </div>
 
-      <!-- Panel de historial de precios -->
+      <!-- Panel historial precios -->
       <div id="pricePanel" hidden>
         <div class="pp-title">Historial de precios</div>
         <div id="ppBody"></div>
