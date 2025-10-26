@@ -118,3 +118,4 @@ button:active{transform:translateY(1px)}
 #splash.fade{opacity:0;pointer-events:none}
 #splashLogo{width:90px;height:90px;animation:spin 1.4s linear infinite}
 @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+
