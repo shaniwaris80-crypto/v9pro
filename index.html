@@ -11,6 +11,23 @@
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 </head>
 <body>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js"></script>
+
+<script>
+  // 🔥 Conexión a tu proyecto ARSLANPRO
+  const firebaseConfig = {
+    apiKey: "AIzaSyDBwcEUZsrIt_RgbXvUa9W6dV2iZVvrmOw",
+    authDomain: "arslanpro.firebaseapp.com",
+    projectId: "arslanpro",
+    storageBucket: "arslanpro.firebasestorage.app",
+    messagingSenderId: "1091972519769",
+    appId: "1:1091972519769:web:35264ea7b4227ca1399e48"
+  };
+  const app = firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+</script>
 
 <!-- Splash -->
 <div id="splash">
