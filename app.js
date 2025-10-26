@@ -1007,15 +1007,6 @@ buscadorGlobal.addEventListener('input',()=>{
   buscadorGlobal.style.background=res.length>0?'#e8f7ee':'#fde2e2';
 });
 
-/* 3️⃣  Copia de seguridad automática semanal */
-function backupSemanal(){
-  const hoy=new Date(); const dia=hoy.getDay(); // 0=domingo
-  if(dia===0){ // domingo
-    const payload={
-      clientes:JSON.parse(localStorage.getItem('arslan_v9_clientes')||'[]'),
-      productos:JSON.parse(localStorage.getItem('arslan_v9_productos')||'[]'),
-      facturas:JSON.parse(localStorage.getItem('arslan_v9_facturas')||'[]'),
-      fecha:hoy.toISOString()
     };
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob);
