@@ -73,15 +73,7 @@ function uploadJSON(cb){
 })();
 
 /* ---------- Splash sin PIN ---------- */
-(function initSplash(){
-  const splash = document.getElementById("splash");
-  if(!splash) return;
-  splash.classList.add("fade-out");
-  setTimeout(() => splash.remove(), 1000);
-  window.addEventListener("load",()=>{
-    const firstTab = document.querySelector('button.tab[data-tab="factura"]');
-    if(firstTab) firstTab.click();
-  });
+
 })();
 
 /* ---------- NAV ---------- */
