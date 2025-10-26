@@ -1134,4 +1134,5 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+/* === ☁️ CONEXIÓN FIREBASE CLOUD SYNC — ARSLAN PRO KIWI === */)
 
