@@ -781,3 +781,21 @@ function drawResumen(){ drawKPIs(); }
   }catch(e){ console.error('Init error',e); } }, 600));
 })();
 })();
+/* === Envío simple por WhatsApp al guardar factura === */
+const WHATSAPP_NUMBER = "+34631667893";
+
+function enviarWhatsAppSimple(){
+  const mensaje = encodeURIComponent("✅ Factura emitida correctamente por ARSLAN PRO KIWI Edition.");
+  const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${mensaje}`;
+  window.open(url, "_blank");
+}
+
+/* Vincular al botón Guardar factura */
+document.addEventListener("DOMContentLoaded", () => {
+  const btnGuardar = document.querySelector("#btnGuardar");
+  if (btnGuardar) {
+    btnGuardar.addEventListener("click", () => {
+      setTimeout(enviarWhatsAppSimple, 1500); // espera 1,5s y abre WhatsApp
+    });
+  }
+});
