@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ARSLAN PRO V11 · Facturación</title>
+  <title>ARSLAN PRO V13 · Facturación Frutería</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
@@ -14,8 +14,8 @@
     <div class="brand">
       <img src="logo-kiwi.png" alt="KIWI" class="logo" onerror="this.classList.add('fallback')">
       <div class="brand-text">
-        <h1>ARSLAN PRO V11</h1>
-        <span>Facturación & Gestión de Fruterías</span>
+        <h1>ARSLAN PRO V13</h1>
+        <span>Gestión & Facturación de Frutería</span>
       </div>
     </div>
     <nav class="tabs">
@@ -29,7 +29,7 @@
 
   <main class="container">
     <!-- FACTURA -->
-    <section class="panel active" id="tab-factura" data-tab-panel="factura">
+    <section class="panel active" data-tab-panel="factura">
       <div class="grid two">
         <div class="card">
           <h2>Proveedor</h2>
@@ -68,7 +68,8 @@
 
         <div id="lineas" class="lineas"></div>
         <div class="legend">
-          Cantidades sin decimales (unidades/cajas). Si el producto es por <strong>caja</strong> con peso definido, el total = cajas × kg/caja × precio €/kg.
+          Cantidades sin decimales (unidades/cajas/manojos).  
+          Si el producto es <strong>caja</strong> con peso definido, el importe = <strong>cajas × kg/caja × €/kg</strong>.
         </div>
       </div>
 
@@ -116,19 +117,19 @@
         </div>
       </div>
 
-      <!-- PANEL HISTORIAL PRECIO (flotante por línea) -->
+      <!-- PANEL HISTORIAL PRECIO (flotante) -->
       <div id="pricePanel" class="price-panel" hidden>
         <div class="pp-head">Historial de precios</div>
         <div class="pp-body" id="ppBody">—</div>
       </div>
 
-      <!-- DOCUMENTO IMPRESIÓN (COMPACTo, 1 página) -->
+      <!-- DOCUMENTO IMPRESIÓN COMPACTO -->
       <section id="printArea" class="print-doc">
         <div class="print-header">
           <div class="print-brand">
             <img src="logo-kiwi.png" alt="KIWI" class="logo" onerror="this.classList.add('fallback')">
             <div>
-              <h1>ARSLAN PRO V11</h1>
+              <h1>ARSLAN PRO V13</h1>
               <small>Factura</small>
             </div>
           </div>
@@ -171,24 +172,27 @@
         <div class="print-notes">
           <div><strong>Estado:</strong> <span id="p-estado">—</span> · <strong>Pago:</strong> <span id="p-metodo">—</span></div>
           <div><strong>Obs.:</strong> <span id="p-obs">—</span></div>
-          <small>El IVA (4%) se muestra pero está incluido. Si aplica, el transporte añade 10% sobre el subtotal.</small>
         </div>
       </section>
     </section>
 
     <!-- CLIENTES -->
-    <section class="panel" id="tab-clientes" data-tab-panel="clientes">
+    <section class="panel" data-tab-panel="clientes">
       <div class="card">
         <div class="header-row">
           <h2>Clientes</h2>
-          <button id="btnAddCliente" class="btn">Añadir cliente</button>
+          <div class="row-inline">
+            <button id="btnAddCliente" class="btn">Añadir</button>
+            <button id="btnExportClientes" class="btn ghost">Exportar JSON</button>
+            <button id="btnImportClientes" class="btn ghost">Importar JSON</button>
+          </div>
         </div>
         <div id="listaClientes" class="list"></div>
       </div>
     </section>
 
     <!-- FACTURAS -->
-    <section class="panel" id="tab-facturas" data-tab-panel="facturas">
+    <section class="panel" data-tab-panel="facturas">
       <div class="card">
         <div class="header-row">
           <h2>Facturas guardadas</h2>
@@ -200,6 +204,8 @@
               <option value="pagado">Pagado</option>
             </select>
             <input id="buscaCliente" placeholder="Buscar por cliente..." />
+            <button id="btnExportFacturas" class="btn ghost">Exportar JSON</button>
+            <button id="btnImportFacturas" class="btn ghost">Importar JSON</button>
           </div>
         </div>
         <div id="listaFacturas" class="list"></div>
@@ -207,7 +213,7 @@
     </section>
 
     <!-- RESUMEN -->
-    <section class="panel" id="tab-resumen" data-tab-panel="resumen">
+    <section class="panel" data-tab-panel="resumen">
       <div class="card">
         <h2>Resumen de deudas</h2>
         <div class="rows compact">
@@ -222,12 +228,12 @@
     </section>
 
     <!-- PRODUCTOS -->
-    <section class="panel" id="tab-productos" data-tab-panel="productos">
+    <section class="panel" data-tab-panel="productos">
       <div class="card">
         <div class="header-row">
           <h2>Productos (sugerencias)</h2>
           <div class="row-inline">
-            <button id="btnAddProducto" class="btn">Añadir producto</button>
+            <button id="btnAddProducto" class="btn">Añadir</button>
             <button id="btnExportProductos" class="btn ghost">Exportar JSON</button>
             <button id="btnImportProductos" class="btn ghost">Importar JSON</button>
           </div>
@@ -238,7 +244,7 @@
   </main>
 
   <footer class="app-footer">
-    <small>ARSLAN PRO V11 — Blanco & Sombras Verdes — © 2025</small>
+    <small>ARSLAN PRO V13 — Blanco & Sombras Verdes — © 2025</small>
   </footer>
 
   <script src="app.js"></script>
