@@ -14,14 +14,11 @@ label{display:block;font-size:.9rem;color:var(--muted)}
 input,select,textarea{width:100%;padding:.45rem .6rem;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--fg)}
 input::placeholder,textarea::placeholder{color:#94a3b8}
 
-/* Splash + PIN */
+/* Splash (sin PIN) */
 #splash{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999}
 #splash img{width:96px;height:96px;animation:spin 3s linear infinite;margin-bottom:.5rem}
 #splash h2{color:var(--green-dark);margin:0 0 .6rem}
 #splash.fade-out{opacity:0;pointer-events:none;transition:opacity .6s ease}
-#pinBox{display:flex;gap:8px;align-items:center}
-#pinBox input{width:180px}
-.pin-msg{height:18px;font-size:.85rem;color:#b42318;margin-top:4px;text-align:center}
 @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
 
 /* Header */
@@ -119,7 +116,7 @@ button.tab.active{background:var(--green);color:#fff;border-color:var(--green)}
 .p-signs img{width:100%;max-width:260px;height:100px;object-fit:contain;border:1px solid var(--border);border-radius:8px;background:#fff}
 .p-totals{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
 @media print{
-  header,nav,.tabs,.btn,.card h3,#pricePanel,.header-actions,#pinBox{display:none!important}
+  header,nav,.tabs,.btn,.card h3,#pricePanel,.header-actions{display:none!important}
   .panel{padding:0}
   .print-area{border:none}
 }
