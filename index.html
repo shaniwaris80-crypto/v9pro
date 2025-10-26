@@ -3,8 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ARSLAN PRO V10 · Facturación</title>
+  <title>ARSLAN PRO V11 · Facturación</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
   <meta name="color-scheme" content="light only" />
 </head>
 <body>
@@ -12,7 +14,7 @@
     <div class="brand">
       <img src="logo-kiwi.png" alt="KIWI" class="logo" onerror="this.classList.add('fallback')">
       <div class="brand-text">
-        <h1>ARSLAN PRO V10</h1>
+        <h1>ARSLAN PRO V11</h1>
         <span>Facturación & Gestión de Fruterías</span>
       </div>
     </div>
@@ -65,7 +67,9 @@
         </div>
 
         <div id="lineas" class="lineas"></div>
-        <div class="legend">Cantidades sin decimales (unidades/cajas). “Modo” libre (kg / unidad / caja / manojo).</div>
+        <div class="legend">
+          Cantidades sin decimales (unidades/cajas). Si el producto es por <strong>caja</strong> con peso definido, el total = cajas × kg/caja × precio €/kg.
+        </div>
       </div>
 
       <div class="grid two">
@@ -112,18 +116,24 @@
         </div>
       </div>
 
-      <!-- DOCUMENTO IMPRESIÓN -->
+      <!-- PANEL HISTORIAL PRECIO (flotante por línea) -->
+      <div id="pricePanel" class="price-panel" hidden>
+        <div class="pp-head">Historial de precios</div>
+        <div class="pp-body" id="ppBody">—</div>
+      </div>
+
+      <!-- DOCUMENTO IMPRESIÓN (COMPACTo, 1 página) -->
       <section id="printArea" class="print-doc">
         <div class="print-header">
           <div class="print-brand">
             <img src="logo-kiwi.png" alt="KIWI" class="logo" onerror="this.classList.add('fallback')">
             <div>
-              <h1>ARSLAN PRO V10</h1>
-              <small>Facturación & Gestión de Fruterías</small>
+              <h1>ARSLAN PRO V11</h1>
+              <small>Factura</small>
             </div>
           </div>
           <div class="print-meta">
-            <div><strong>Nº Factura:</strong> <span id="p-num">—</span></div>
+            <div><strong>Nº:</strong> <span id="p-num">—</span></div>
             <div><strong>Fecha:</strong> <span id="p-fecha">—</span></div>
           </div>
         </div>
@@ -160,8 +170,8 @@
 
         <div class="print-notes">
           <div><strong>Estado:</strong> <span id="p-estado">—</span> · <strong>Pago:</strong> <span id="p-metodo">—</span></div>
-          <div><strong>Observaciones:</strong> <span id="p-obs">—</span></div>
-          <small>El IVA (4%) se muestra pero ya está incluido en los precios totales. Si aplica transporte, se añade 10% sobre el subtotal.</small>
+          <div><strong>Obs.:</strong> <span id="p-obs">—</span></div>
+          <small>El IVA (4%) se muestra pero está incluido. Si aplica, el transporte añade 10% sobre el subtotal.</small>
         </div>
       </section>
     </section>
@@ -228,13 +238,10 @@
   </main>
 
   <footer class="app-footer">
-    <small>ARSLAN PRO V10 — Blanco & Negro — © 2025</small>
+    <small>ARSLAN PRO V11 — Blanco & Sombras Verdes — © 2025</small>
   </footer>
 
   <script src="app.js"></script>
 </body>
 </html>
 
-  <script src="app.js"></script>
-</body>
-</html>
