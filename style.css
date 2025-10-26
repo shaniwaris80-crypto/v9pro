@@ -118,4 +118,30 @@ button:active{transform:translateY(1px)}
 #splash.fade{opacity:0;pointer-events:none}
 #splashLogo{width:90px;height:90px;animation:spin 1.4s linear infinite}
 @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+/* ================================
+   ✨ Transiciones de tema y estilo
+   ================================ */
 
+html,body{transition:background-color .4s,color .4s;}
+.dark-mode{background-color:#111827!important;color:#f9fafb!important;}
+
+button,select,input{
+  transition:background-color .3s,color .3s,border-color .3s;
+}
+button{
+  border-radius:8px;border:1px solid var(--border);
+  background:var(--accent);color:#fff;font-weight:600;
+  cursor:pointer;padding:6px 12px;
+}
+button:hover{filter:brightness(1.1);transform:scale(1.03);}
+button:active{transform:scale(0.97);}
+
+input,select{
+  background:var(--bg);color:var(--text);
+  border:1px solid var(--border);border-radius:6px;padding:5px 8px;
+}
+input:focus,select:focus{
+  outline:none;border-color:var(--accent);
+  box-shadow:0 0 0 2px rgba(34,197,94,.2);
+}
+#total,#pendiente{font-weight:700;font-size:1.2em;color:var(--accent);}
