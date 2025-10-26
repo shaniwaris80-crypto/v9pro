@@ -781,4 +781,77 @@ function drawResumen(){ drawKPIs(); }
   }catch(e){ console.error('Init error',e); } }, 600));
 })();
 })();
+/* ================================
+   🎨 MODO CLARO / OSCURO + PALETAS
+   ================================ */
+
+(function(){
+  // Paletas predefinidas
+  const PALETAS = {
+    kiwi:    {bg:'#ffffff', text:'#1f2937', accent:'#22c55e', border:'#e5e7eb'},
+    graphite:{bg:'#111827', text:'#f9fafb', accent:'#3b82f6', border:'#374151'},
+    sand:    {bg:'#fdf6e3', text:'#3f3f46', accent:'#ca8a04', border:'#e7e5e4'},
+    mint:    {bg:'#ecfdf5', text:'#064e3b', accent:'#10b981', border:'#a7f3d0'}
+  };
+
+  // Crear menú visual de selección
+  const bar = document.createElement('div');
+  bar.id = 'colorToolbar';
+  bar.innerHTML = `
+    <style>
+      #colorToolbar{
+        position:fixed; bottom:12px; right:12px; z-index:9999;
+        display:flex; gap:6px; background:rgba(255,255,255,.7);
+        border:1px solid #ccc; border-radius:8px; padding:6px 10px; 
+        box-shadow:0 2px 5px rgba(0,0,0,.2); backdrop-filter:blur(6px);
+      }
+      #colorToolbar button{
+        width:28px; height:28px; border-radius:50%; border:none; cursor:pointer;
+        transition:transform .2s; outline:none;
+      }
+      #colorToolbar button:hover{ transform:scale(1.2); }
+      #colorToolbar .dark-toggle{ width:auto; padding:0 10px; font-size:13px; font-weight:600; border-radius:6px; background:#222; color:#fff; }
+    </style>
+  `;
+  document.body.appendChild(bar);
+
+  // Botones de paleta
+  for(const [name,p] of Object.entries(PALETAS)){
+    const b=document.createElement('button');
+    b.title=name; b.style.background=p.accent;
+    b.onclick=()=>aplicarTema(name);
+    bar.appendChild(b);
+  }
+
+  // Botón modo claro/oscuro
+  const toggle=document.createElement('button');
+  toggle.className='dark-toggle';
+  toggle.textContent='🌞/🌙';
+  toggle.onclick=()=>toggleDark();
+  bar.appendChild(toggle);
+
+  // Aplicar tema seleccionado
+  function aplicarTema(nombre){
+    const pal=PALETAS[nombre];
+    if(!pal) return;
+    for(const [k,v] of Object.entries(pal)){
+      document.documentElement.style.setProperty(`--${k}`, v);
+    }
+    localStorage.setItem('arslan_tema', nombre);
+  }
+
+  // Alternar modo oscuro/claro
+  function toggleDark(){
+    const isDark=document.body.classList.toggle('dark-mode');
+    localStorage.setItem('arslan_dark', isDark);
+    document.body.style.background=isDark?'#111':'var(--bg)';
+    document.body.style.color=isDark?'#f9fafb':'var(--text)';
+  }
+
+  // Restaurar configuración al cargar
+  const guardadoTema = localStorage.getItem('arslan_tema') || 'kiwi';
+  const guardadoDark = localStorage.getItem('arslan_dark') === 'true';
+  aplicarTema(guardadoTema);
+  if(guardadoDark) toggleDark();
+})();
 
