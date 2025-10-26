@@ -118,3 +118,83 @@ button:active{transform:translateY(1px)}
 #splash.fade{opacity:0;pointer-events:none}
 #splashLogo{width:90px;height:90px;animation:spin 1.4s linear infinite}
 @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+:root {
+  --bg:#fff;
+  --text:#111;
+  --accent:#1f9d55;
+  --accent-hover:#15803d;
+  --border:#e5e7eb;
+}
+
+/* === TEMAS === */
+body.theme-light {
+  --bg:#ffffff;
+  --text:#111111;
+  --accent:#1f9d55;
+  --accent-hover:#15803d;
+  --border:#e5e7eb;
+}
+body.theme-dark {
+  --bg:#0f1115;
+  --text:#f9fafb;
+  --accent:#22c55e;
+  --accent-hover:#16a34a;
+  --border:#2d2f35;
+}
+body.theme-gold {
+  --bg:#fffbea;
+  --text:#1c1917;
+  --accent:#fbbf24;
+  --accent-hover:#f59e0b;
+  --border:#f5e6a1;
+}
+body.theme-blue {
+  --bg:#f5faff;
+  --text:#0f172a;
+  --accent:#1d4ed8;
+  --accent-hover:#1e40af;
+  --border:#d0e2ff;
+}
+
+/* === ESTILOS BASE === */
+body {
+  font-family:'Poppins',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  transition:background .3s,color .3s;
+}
+header {
+  display:flex;align-items:center;justify-content:space-between;
+  padding:.7rem 1rem;border-bottom:1px solid var(--border);
+  background:var(--bg);position:sticky;top:0;z-index:99;
+}
+.logo-area {display:flex;align-items:center;gap:.5rem;}
+.logo {height:40px;width:auto;}
+
+.tabs {display:flex;gap:.3rem;}
+.tab {
+  border:1px solid var(--border);
+  background:transparent;color:var(--text);
+  padding:.4rem .8rem;border-radius:.5rem;
+  cursor:pointer;transition:.2s;
+}
+.tab.active, .tab:hover {background:var(--accent);color:#fff;}
+
+.theme-selector {position:relative;}
+#btnTheme {
+  background:var(--accent);color:#fff;
+  border:none;border-radius:50%;padding:.5rem;cursor:pointer;
+  transition:.2s;
+}
+#btnTheme:hover {background:var(--accent-hover);}
+#themeMenu {
+  position:absolute;right:0;top:120%;
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:.5rem;box-shadow:0 4px 12px rgba(0,0,0,.1);
+  display:flex;flex-direction:column;min-width:160px;
+}
+#themeMenu button {
+  background:none;border:none;text-align:left;
+  padding:.5rem 1rem;cursor:pointer;color:var(--text);
+}
+#themeMenu button:hover {background:var(--accent);color:#fff;}
