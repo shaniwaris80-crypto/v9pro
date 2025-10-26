@@ -872,3 +872,104 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 /* ========================================================================== */
+/* ============================================================
+ 🥝  ARSLAN PRO V10.4 – Add-ons Pack (bloque final opcional)
+     Mejora visual, accesos rápidos y utilidad en móvil.
+     Todo sin modificar el código base.
+============================================================ */
+
+/* 1️⃣ Botón volver arriba */
+const btnUp = document.createElement('button');
+btnUp.textContent = '⬆️';
+btnUp.id = 'btnUp';
+btnUp.style.cssText = `
+ position:fixed;bottom:70px;right:15px;z-index:9998;
+ background:#000;color:#fff;border:none;padding:10px;
+ border-radius:50%;cursor:pointer;display:none;
+`;
+document.body.appendChild(btnUp);
+window.addEventListener('scroll',()=>{btnUp.style.display=(window.scrollY>400)?'block':'none';});
+btnUp.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
+
+/* 2️⃣ Auto modo oscuro según sistema */
+if(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches){
+  document.documentElement.style.background='#111';
+  document.body.style.color='#eee';
+}
+
+/* 3️⃣ Aviso visual toast al guardar factura */
+function toast(msg){
+  const t=document.createElement('div');
+  t.textContent=msg;
+  t.style.cssText='position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#1f9d55;color:#fff;padding:10px 20px;border-radius:8px;font-family:Poppins;z-index:9999;animation:fade 2.8s ease;';
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2800);
+}
+const css=document.createElement('style');
+css.textContent='@keyframes fade{0%{opacity:0;}10%,90%{opacity:1;}100%{opacity:0;}}';
+document.head.appendChild(css);
+document.querySelector('#btnGuardar')?.addEventListener('click',()=>setTimeout(()=>toast('✅ Factura guardada correctamente'),1000));
+
+/* 4️⃣ Atajo Ctrl+N para nueva factura */
+document.addEventListener('keydown',e=>{
+  if(e.ctrlKey && e.key.toLowerCase()==='n'){
+    e.preventDefault();
+    document.querySelector('#btnNueva')?.click();
+  }
+});
+
+/* 5️⃣ Mini reloj digital */
+const reloj=document.createElement('div');
+reloj.id='reloj';
+reloj.style.cssText='position:fixed;top:10px;right:10px;font-family:Poppins;color:#1f9d55;font-size:14px;z-index:9999;';
+document.body.appendChild(reloj);
+setInterval(()=>{
+  const d=new Date();reloj.textContent=d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+},1000);
+
+/* 6️⃣ Cambiar a pestaña Facturas tras guardar */
+document.querySelector('#btnGuardar')?.addEventListener('click',()=>{
+  setTimeout(()=>document.querySelector('[data-tab="facturas"]')?.click(),1200);
+});
+
+/* 7️⃣ Aviso antes de cerrar la página */
+window.addEventListener('beforeunload', e => {
+  e.preventDefault();
+  e.returnValue = '¿Seguro que quieres salir? Los cambios no guardados se perderán.';
+});
+
+/* 8️⃣ Modo compacto en móvil */
+if(window.innerWidth < 600){
+  document.body.style.fontSize='14px';
+}
+
+/* 9️⃣ Indicador de facturas pendientes */
+function checkPendientes(){
+  const data=JSON.parse(localStorage.getItem('arslan_v9_facturas')||'[]');
+  const pendientes=data.filter(f=>f.estado!=='pagado').length;
+  const tab=document.querySelector('[data-tab="facturas"]');
+  if(!tab)return;
+  if(pendientes>0){ tab.textContent=`Facturas 🔴(${pendientes})`; }
+  else{ tab.textContent='Facturas'; }
+}
+checkPendientes();
+setInterval(checkPendientes,5000);
+
+/* 🔟 Pulso verde en botón de color 🎨 si existe */
+const pulse=document.createElement('style');
+pulse.textContent='@keyframes pulseKiwi{0%{box-shadow:0 0 0 0 rgba(31,157,85,0.5);}70%{box-shadow:0 0 0 10px rgba(31,157,85,0);}100%{box-shadow:0 0 0 0 rgba(31,157,85,0);}}#btnColor{animation:pulseKiwi 2s infinite;}';
+document.head.appendChild(pulse);
+
+/* ✅ Compatibilidad con impresión PDF: sin color */
+const styleBW = document.createElement('style');
+styleBW.textContent = `
+ @media print {
+   body * { color:#000!important; background:#fff!important; box-shadow:none!important; }
+   #btnColor,#colorMenu,#btnUp,#reloj { display:none!important; }
+ }
+`;
+document.head.appendChild(styleBW);
+
+/* ============================================================
+  Fin del bloque de mejoras simples 🍃
+============================================================ */
