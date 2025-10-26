@@ -1,5 +1,5 @@
 /* =======================================================
-   🥝 ARSLAN PRO V10 ULTRA — app.js (completo)
+   🥝 ARSLAN PRO V10 ULTRA — app.js (SIN PIN, COMPLETO)
 ==========================================================*/
 (function(){
 "use strict";
@@ -13,11 +13,10 @@ const escapeHTML = s => String(s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':
 const todayISO = () => new Date().toISOString();
 const fmtDateDMY = (d) => `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
 const unMoney = s => parseFloat(String(s).replace(/\./g,'').replace(',','.').replace(/[^\d.]/g,'')) || 0;
-const formatDateInput = (iso) => iso?.slice(0,10);
 
 /* ---------- KEYS & STATE ---------- */
 const K_CLIENTES='arslan_v10_clientes', K_PRODUCTOS='arslan_v10_productos', K_FACTURAS='arslan_v10_facturas', K_PRICEHIST='arslan_v10_pricehist';
-const K_DRAFT='arslan_v10_draft', K_THEME='arslan_v10_theme', K_PINOK='arslan_v10_pin_ok';
+const K_DRAFT='arslan_v10_draft', K_THEME='arslan_v10_theme';
 const K_FIRMA_PROV='arslan_v10_firma_prov', K_FIRMA_CLI='arslan_v10_firma_cli';
 
 let clientes  = safeParse(localStorage.getItem(K_CLIENTES), []);
@@ -73,27 +72,22 @@ function uploadJSON(cb){
   });
 })();
 
-/* ---------- PIN ---------- */
-const PIN = '197030';
-(function initPIN(){
-  const ok = localStorage.getItem(K_PINOK)==='1';
-  const splash=$('#splash'), pinBox=$('#pinBox'), pinInp=$('#pinInput'), pinBtn=$('#pinBtn'), pinMsg=$('#pinMsg');
-  function enter(){
-    splash.classList.add('fade-out'); setTimeout(()=>splash.remove(), 700);
-    setTimeout(()=>document.querySelector('[data-tab="factura"]')?.click(), 800);
-  }
-  if(ok){ enter(); return; }
-  pinBtn.addEventListener('click', ()=>{
-    if(pinInp.value===PIN){ localStorage.setItem(K_PINOK,'1'); enter(); }
-    else { pinMsg.textContent='PIN incorrecto'; setTimeout(()=>pinMsg.textContent='', 2000); }
+/* ---------- Splash sin PIN ---------- */
+(function initSplash(){
+  const splash = document.getElementById("splash");
+  if(!splash) return;
+  splash.classList.add("fade-out");
+  setTimeout(() => splash.remove(), 1000);
+  window.addEventListener("load",()=>{
+    const firstTab = document.querySelector('button.tab[data-tab="factura"]');
+    if(firstTab) firstTab.click();
   });
-  pinInp.addEventListener('keydown', e=>{ if(e.key==='Enter') pinBtn.click(); });
 })();
 
 /* ---------- NAV ---------- */
 function switchTab(id){
   $$('button.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===id));
-  $$( 'section.panel').forEach(p=>p.classList.toggle('active', p.dataset.tabPanel===id));
+  $$('section.panel').forEach(p=>p.classList.toggle('active', p.dataset.tabPanel===id));
   if(id==='resumen'){ drawResumen(); drawCharts(); }
   if(id==='productos'){ renderProductos(); }
   if(id==='facturas'){ renderFacturas(); }
@@ -140,7 +134,7 @@ const pNum=$('#p-num'), pFecha=$('#p-fecha'), pProv=$('#p-prov'), pCli=$('#p-cli
 const pSub=$('#p-sub'), pTra=$('#p-tra'), pIva=$('#p-iva'), pTot=$('#p-tot'), pEstado=$('#p-estado'), pMetodo=$('#p-metodo'), pObs=$('#p-obs');
 const pFirmaProv=$('#p-firma-prov'), pFirmaCli=$('#p-firma-cli');
 
-// Historial panel
+// Panel historial precios
 const pricePanel = $('#pricePanel'), ppBody = $('#ppBody');
 let hidePanelTimer=null;
 function showPricePanel(){ if(pricePanel.hasAttribute('hidden')) pricePanel.removeAttribute('hidden'); clearTimeout(hidePanelTimer); }
@@ -148,7 +142,7 @@ function scheduleHidePricePanel(){ clearTimeout(hidePanelTimer); hidePanelTimer=
 pricePanel?.addEventListener('mouseenter', ()=>clearTimeout(hidePanelTimer));
 pricePanel?.addEventListener('mouseleave', scheduleHidePricePanel);
 
-/* ---------- FIRMAS (guardar en localStorage como dataURL) ---------- */
+/* ---------- FIRMAS ---------- */
 function fileToDataUrl(file, cb){
   if(!file) return;
   const fr=new FileReader(); fr.onload=()=>cb(fr.result); fr.readAsDataURL(file);
@@ -277,7 +271,7 @@ btnImportClientes?.addEventListener('click', ()=>uploadJSON(arr=>{
 selCliente?.addEventListener('change', ()=>{
   const i=selCliente.value; if(i==='') return; const c=clientes[+i]; if(!c) return;
   cli.nombre.value=c.nombre||''; cli.nif.value=c.nif||''; cli.dir.value=c.dir||''; cli.tel.value=c.tel||''; cli.email.value=c.email||'';
-  saveDraft(); // autoguardado
+  saveDraft();
 });
 
 /* ---------- PRODUCTOS ---------- */
@@ -434,7 +428,7 @@ function lineaHTML(){
         nameInp.value=p.name;
         if(p.mode){ modeInp.value=p.mode; }
         if(p.price!=null){ priceInp.value=p.price; }
-        if(p.origin){ originInp.value=p.origin; } // autocompletar origen
+        if(p.origin){ originInp.value=p.origin; }
         list.hidden=true; recalcLine(); renderPriceHistory(p.name); saveDraft();
       });
       list.appendChild(btn);
@@ -486,7 +480,7 @@ function getLineas(){
 }
 function lineImporte(l){ return (l.mode==='unidad') ? l.qty*l.price : l.net*l.price; }
 
-/* ---------- AUTO-SAVE (FACTURA EN CURSO) ---------- */
+/* ---------- AUTO-SAVE ---------- */
 function saveDraft(){
   const draft = {
     proveedor:{nombre:prov.nombre.value,nif:prov.nif.value,dir:prov.dir.value,tel:prov.tel.value,email:prov.email.value},
@@ -535,17 +529,17 @@ function recalc(){
 function genNumFactura(){ const d=new Date(), pad=n=>String(n).padStart(2,'0'); return `FA-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`; }
 function saveFacturas(){ localStorage.setItem(K_FACTURAS, JSON.stringify(facturas)); }
 
-btnGuardar?.addEventListener('click', ()=>{
+$('#btnGuardar')?.addEventListener('click', ()=>{
   const ls=getLineas(); if(ls.length===0){ alert('Añade al menos una línea.'); return; }
   const numero=genNumFactura(); const now=todayISO();
 
   ls.forEach(l=> pushPriceHistory(l.name, l.price));
 
-  const subtotal=unMoney(subtotalEl.textContent);
-  const transporte=unMoney(transpEl.textContent);
-  const iva=unMoney(ivaEl.textContent);
-  const total=unMoney(totalEl.textContent);
-  const pagado=parseNum(pagadoInp.value);
+  const subtotal=unMoney($('#subtotal').textContent);
+  const transporte=unMoney($('#transp').textContent);
+  const iva=unMoney($('#iva').textContent);
+  const total=unMoney($('#total').textContent);
+  const pagado=parseNum($('#pagado').value);
   const pendiente=Math.max(0,total-pagado);
 
   const factura={
@@ -557,51 +551,46 @@ btnGuardar?.addEventListener('click', ()=>{
     totals:{subtotal,transporte,iva,total,pagado,pendiente}
   };
   facturas.unshift(factura); saveFacturas();
-  localStorage.removeItem(K_DRAFT); // limpiar borrador
+  localStorage.removeItem(K_DRAFT);
   alert(`Factura ${numero} guardada.`);
-  renderFacturas(); renderResumen(); fillPrint(ls,{subtotal,transporte,iva,total},factura);
+  renderFacturas(); drawResumen(); fillPrint(ls,{subtotal,transporte,iva,total},factura);
 });
 
-btnImprimir?.addEventListener('click', ()=>{
-  const fTemp={ lineas:getLineas(), totals:{ subtotal:unMoney(subtotalEl.textContent), transporte:unMoney(transpEl.textContent), iva:unMoney(ivaEl.textContent), total:unMoney(totalEl.textContent)}, estado:estado.value, metodo:metodoPago.value, obs:observaciones.value, proveedor:{nombre:prov.nombre.value,nif:prov.nif.value,dir:prov.dir.value,tel:prov.tel.value,email:prov.email.value}, cliente:{nombre:cli.nombre.value,nif:cli.nif.value,dir:cli.dir.value,tel:cli.tel.value,email:cli.email.value}, numero:'(Borrador)', fecha:todayISO() };
+$('#btnImprimir')?.addEventListener('click', ()=>{
+  const fTemp={ lineas:getLineas(), totals:{ subtotal:unMoney($('#subtotal').textContent), transporte:unMoney($('#transp').textContent), iva:unMoney($('#iva').textContent), total:unMoney($('#total').textContent)}, estado:estado.value, metodo:metodoPago.value, obs:observaciones.value, proveedor:{nombre:prov.nombre.value,nif:prov.nif.value,dir:prov.dir.value,tel:prov.tel.value,email:prov.email.value}, cliente:{nombre:cli.nombre.value,nif:cli.nif.value,dir:cli.dir.value,tel:cli.tel.value,email:cli.email.value}, numero:'(Borrador)', fecha:todayISO() };
   fillPrint(fTemp.lineas,fTemp.totals,fTemp);
   window.print();
 });
 
-async function generatePDFBlob(currentFactura){
+async function generatePDFBlob(){
   const area=document.getElementById('printArea');
   const opt={ margin:10, filename:'Factura.pdf', image:{type:'jpeg',quality:0.98}, html2canvas:{scale:2}, jsPDF:{unit:'mm',format:'a4',orientation:'portrait'} };
-  // html2pdf no devuelve blob directamente, creamos wrapper:
-  return new Promise(resolve=>{
-    const worker=html2pdf().set(opt).from(area);
-    worker.outputPdf('blob').then(blob=>resolve(blob));
-  });
+  const worker = html2pdf().set(opt).from(area);
+  const blob = await worker.output('blob'); // correcto
+  return blob;
 }
-btnShareWA?.addEventListener('click', async ()=>{
-  // Prepara factura temporal con los datos actuales
-  const fTemp={ lineas:getLineas(), totals:{ subtotal:unMoney(subtotalEl.textContent), transporte:unMoney(transpEl.textContent), iva:unMoney(ivaEl.textContent), total:unMoney(totalEl.textContent)}, estado:estado.value, metodo:metodoPago.value, obs:observaciones.value, proveedor:{nombre:prov.nombre.value,nif:prov.nif.value,dir:prov.dir.value,tel:prov.tel.value,email:prov.email.value}, cliente:{nombre:cli.nombre.value}, numero:'(Borrador)', fecha:todayISO() };
+$('#btnShareWA')?.addEventListener('click', async ()=>{
+  const fTemp={ lineas:getLineas(), totals:{ subtotal:unMoney($('#subtotal').textContent), transporte:unMoney($('#transp').textContent), iva:unMoney($('#iva').textContent), total:unMoney($('#total').textContent)}, estado:estado.value, metodo:metodoPago.value, obs:observaciones.value, proveedor:{nombre:prov.nombre.value}, cliente:{nombre:cli.nombre.value}, numero:'(Borrador)', fecha:todayISO() };
   fillPrint(fTemp.lineas,fTemp.totals,fTemp);
-
-  const blob = await generatePDFBlob(fTemp);
+  const blob = await generatePDFBlob();
   const url = URL.createObjectURL(blob);
-  const texto = encodeURIComponent(`Factura ${fTemp.cliente.nombre||''} (${fmtDateDMY(new Date())}) Total: ${money(fTemp.totals.total)}\nDescarga el PDF: ${url}`);
+  const texto = encodeURIComponent(`Factura ${fTemp.cliente.nombre||''} (${fmtDateDMY(new Date())}) Total: ${money(fTemp.totals.total)}\nPDF: ${url}`);
   window.open(`https://wa.me/?text=${texto}`, '_blank');
   setTimeout(()=>URL.revokeObjectURL(url), 60000);
 });
-btnShareMail?.addEventListener('click', async ()=>{
-  const fTemp={ lineas:getLineas(), totals:{ subtotal:unMoney(subtotalEl.textContent), transporte:unMoney(transpEl.textContent), iva:unMoney(ivaEl.textContent), total:unMoney(totalEl.textContent)}, estado:estado.value, metodo:metodoPago.value, obs:observaciones.value, proveedor:{nombre:prov.nombre.value,nif:prov.nif.value,dir:prov.dir.value,tel:prov.tel.value,email:prov.email.value}, cliente:{nombre:cli.nombre.value,email:cli.email.value}, numero:'(Borrador)', fecha:todayISO() };
+$('#btnShareMail')?.addEventListener('click', async ()=>{
+  const fTemp={ lineas:getLineas(), totals:{ subtotal:unMoney($('#subtotal').textContent), transporte:unMoney($('#transp').textContent), iva:unMoney($('#iva').textContent), total:unMoney($('#total').textContent)}, estado:estado.value, metodo:metodoPago.value, obs:observaciones.value, proveedor:{nombre:prov.nombre.value}, cliente:{nombre:cli.nombre.value,email:cli.email.value}, numero:'(Borrador)', fecha:todayISO() };
   fillPrint(fTemp.lineas,fTemp.totals,fTemp);
-
-  const blob = await generatePDFBlob(fTemp);
+  const blob = await generatePDFBlob();
   const url = URL.createObjectURL(blob);
   const to = encodeURIComponent(fTemp.cliente.email || '');
   const subject = encodeURIComponent(`Factura ${fTemp.cliente.nombre||''} - ${fmtDateDMY(new Date())}`);
-  const body = encodeURIComponent(`Adjunto enlace de descarga de la factura en PDF (válido temporalmente):\n${url}\n\nTotal: ${money(fTemp.totals.total)}`);
+  const body = encodeURIComponent(`Descarga temporal del PDF:\n${url}\n\nTotal: ${money(fTemp.totals.total)}`);
   window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
   setTimeout(()=>URL.revokeObjectURL(url), 60000);
 });
 
-btnNueva?.addEventListener('click', ()=>{
+$('#btnNueva')?.addEventListener('click', ()=>{
   lineasDiv.innerHTML=''; for(let i=0;i<5;i++) addLinea();
   chkTransporte.checked=false; chkIvaIncluido.checked=true; estado.value='pendiente';
   pagadoInp.value=''; metodoPago.value='Efectivo'; observaciones.value='';
@@ -666,7 +655,6 @@ function renderFacturas(){
         fillPrint(f.lineas,f.totals,f); switchTab('factura'); $('#printArea').scrollIntoView({behavior:'smooth'}); return;
       }
       if(b.dataset.e==='dup'){
-        // cargar como borrador
         localStorage.setItem(K_DRAFT, JSON.stringify({
           proveedor:f.proveedor, cliente:f.cliente, lineas:f.lineas,
           opciones:{transporte:f.transporte, ivaIncluido:f.ivaIncluido, estado:'pendiente', pagado:'0', metodo:f.metodo, obs:f.obs}
@@ -684,10 +672,8 @@ function renderFacturas(){
         const dt=new Date(f.fecha);
         const nombreCliente=(f.cliente?.nombre||'Cliente').replace(/\s+/g,'');
         const filename=`Factura-${nombreCliente}-${fmtDateDMY(dt)}.pdf`;
-        if(typeof html2pdf!=='undefined'){
-          const opt={ margin:10, filename, image:{type:'jpeg',quality:0.98}, html2canvas:{scale:2}, jsPDF:{unit:'mm',format:'a4',orientation:'portrait'} };
-          html2pdf().set(opt).from(document.getElementById('printArea')).save();
-        } else { window.print(); }
+        const opt={ margin:10, filename, image:{type:'jpeg',quality:0.98}, html2canvas:{scale:2}, jsPDF:{unit:'mm',format:'a4',orientation:'portrait'} };
+        html2pdf().set(opt).from(document.getElementById('printArea')).save();
         return;
       }
     });
@@ -865,14 +851,16 @@ btnRestoreZip?.addEventListener('click', ()=>{
 function initLines(){ if($$('.linea').length===0){ for(let i=0;i<5;i++) addLinea(); } }
 function renderAll(){ renderClientesSelect(); renderClientesLista(); renderProductos(); renderFacturas(); drawResumen(); }
 
+function savePriceHist(){ localStorage.setItem(K_PRICEHIST, JSON.stringify(priceHist)); } // ensure defined
+
 seedClientesIfEmpty();
 seedProductsIfEmpty();
 renderAll();
 initLines();
-loadDraft(); // cargar borrador si existiera
+loadDraft();
 recalc();
 
-// Reforzar render inicial tras carga
-window.addEventListener('load', ()=>setTimeout(()=>{ try{ seedClientesIfEmpty(); seedProductsIfEmpty(); renderAll(); recalc(); console.log('✅ V10 listo'); }catch(e){ console.error(e);} }, 600));
+// Refuerzo de render
+window.addEventListener('load', ()=>setTimeout(()=>{ try{ seedClientesIfEmpty(); seedProductsIfEmpty(); renderAll(); recalc(); }catch(e){ console.error(e);} }, 600));
 
 })();
