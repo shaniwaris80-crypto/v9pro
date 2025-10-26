@@ -1,9 +1,110 @@
+:root{
+  --bg:#ffffff;
+  --text:#111111;
+  --muted:#666666;
+  --border:#e5e5e5;
+  --ink:#000000;
+}
+
 *{box-sizing:border-box}
-body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;max-width:900px;margin:0 auto;padding:16px}
-header{padding:12px 0;border-bottom:1px solid #eee;margin-bottom:16px}
-h1{margin:0}
-section{margin:16px 0;padding:12px;border:1px solid #eee;border-radius:10px}
-input{padding:8px;margin:6px 0;width:100%;max-width:420px}
-#items .item{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:8px;margin:8px 0}
-button{padding:8px 12px;border:1px solid #ddd;border-radius:10px;background:#fff;cursor:pointer}
-button:hover{background:#f5f5f5}
+html,body{margin:0;padding:0}
+body{
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  color:var(--text);
+  background:var(--bg);
+  line-height:1.35;
+}
+
+/* Header */
+.app-header{
+  border-bottom:1px solid var(--border);
+  padding:12px 16px;
+  position:sticky; top:0; background:#fff; z-index:5;
+}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:48px;height:48px}
+.brand-text h1{font-size:20px;margin:0}
+.brand-text span{font-size:12px;color:var(--muted)}
+
+.tabs{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+.tab{
+  border:1px solid var(--border);
+  background:#fff;
+  padding:8px 12px;border-radius:10px;cursor:pointer;
+}
+.tab.active{border-color:#111;background:#f7f7f7}
+
+/* Layout */
+.container{max-width:1100px;margin:0 auto;padding:16px}
+.grid.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:900px){.grid.two{grid-template-columns:1fr}}
+
+/* Cards */
+.card{
+  border:1px solid var(--border);
+  border-radius:14px;padding:16px;background:#fff;
+}
+.header-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.rows{display:flex;flex-direction:column;gap:10px}
+.rows.compact .kv{display:flex;justify-content:space-between;gap:8px;margin:6px 0}
+.row-inline{display:flex;gap:8px;align-items:center}
+.legend{font-size:12px;color:var(--muted);margin-top:8px}
+
+/* Inputs + Buttons */
+input, select{
+  width:100%;padding:10px;border:1px solid var(--border);
+  border-radius:10px;background:#fff;color:#111;
+}
+input::placeholder{color:#999}
+.btn{
+  padding:10px 14px;border:1px solid #111;background:#fff;color:#111;
+  border-radius:10px;cursor:pointer
+}
+.btn:hover{background:#f5f5f5}
+.btn.ghost{border-color:var(--border);color:#111}
+.btn.primary{background:#111;color:#fff}
+
+/* Líneas productos */
+.lineas{display:flex;flex-direction:column;gap:8px}
+.linea{
+  display:grid;gap:8px;align-items:center;
+  grid-template-columns:2fr 1fr 1fr 1fr auto;
+}
+@media (max-width:700px){
+  .linea{grid-template-columns:1fr 1fr 1fr 1fr}
+  .linea .del{grid-column:1/-1}
+}
+.linea .del{border:1px solid var(--border);background:#fff;border-radius:10px;padding:10px}
+
+/* Totales */
+.totals .divider{border-top:1px dashed var(--border);margin:8px 0}
+.kv.total strong{font-size:20px}
+
+/* Lists */
+.list{display:flex;flex-direction:column;gap:8px}
+.item{
+  border:1px solid var(--border);border-radius:12px;padding:12px;background:#fff;
+  display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap
+}
+.item .meta{font-size:12px;color:var(--muted)}
+
+/* Footer */
+.app-footer{border-top:1px solid var(--border);padding:12px 16px;color:var(--muted);text-align:center}
+
+/* PRINT: solo imprime el documento de factura */
+@media print{
+  body *{visibility:hidden}
+  #printArea, #printArea *{visibility:visible}
+  #printArea{position:absolute;left:0;top:0;width:100%}
+}
+
+/* Documento imprimible */
+.print-doc{border:1px solid var(--border);border-radius:14px;padding:16px;background:#fff;margin-top:16px}
+.print-header{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.print-brand{display:flex;gap:12px;align-items:center}
+.print-meta{font-size:14px}
+.print-columns{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:12px 0}
+.print-table{width:100%;border-collapse:collapse}
+.print-table th,.print-table td{border:1px solid var(--border);padding:8px;text-align:left}
+.print-table tfoot td.right{text-align:right}
+.print-table tfoot tr.total td{font-weight:700}
