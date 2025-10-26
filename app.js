@@ -1,6 +1,11 @@
-/* ARSLAN PRO V14
-   - Igual que V13 + catálogo inicial con NOMBRES (sin modos ni precios)
-   - El catálogo se precarga SOLO si no hay productos guardados (no duplica)
+/* ARSLAN PRO V15
+   - Factura avanzada: tipo, cantidad, peso bruto, tara, peso neto, precio, origen, importe
+   - 5 líneas por defecto (las vacías no imprimen)
+   - Productos Pro: tipo, kg/caja, precio base, origen
+   - Facturas: marcar como pagada, cobro parcial, PDF, filtro por estado
+   - Deudas: global y por cliente + reset global y por cliente
+   - Estadísticas: ventas diarias/semanales/mensuales + gráfico Canvas simple
+   - Semilla de productos (solo nombres) si no existieran
 */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -10,13 +15,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const money = n => (isNaN(n)?0:n).toFixed(2).replace('.', ',') + " €";
   const parseNum = v => { const n = parseFloat(String(v).replace(',', '.')); return isNaN(n) ? 0 : n; };
   const escapeHTML = s => String(s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+  const todayISO = () => new Date().toISOString();
 
   // Keys
-  const K_CLIENTES='apv14_clientes', K_PRODUCTOS='apv14_productos', K_FACTURAS='apv14_facturas', K_PRICEHIST='apv14_pricehist';
+  const K_CLIENTES='apv15_clientes', K_PRODUCTOS='apv15_productos', K_FACTURAS='apv15_facturas', K_PRICEHIST='apv15_pricehist';
 
   // Estado
   let clientes = JSON.parse(localStorage.getItem(K_CLIENTES) || '[]');
-  let productos = JSON.parse(localStorage.getItem(K_PRODUCTOS) || '[]'); // {name, mode?, boxKg?, price?}
+  let productos = JSON.parse(localStorage.getItem(K_PRODUCTOS) || '[]'); // {name, mode?, boxKg?, price?, origin?}
   let facturas  = JSON.parse(localStorage.getItem(K_FACTURAS)  || '[]');
   let priceHist = JSON.parse(localStorage.getItem(K_PRICEHIST) || '{}'); // {name: [{price,date}, ...]}
 
@@ -37,18 +43,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const btnGuardar = $('#btnGuardar'); const btnImprimir = $('#btnImprimir'); const btnNueva = $('#btnNueva');
 
-  // DOM: listas
+  // DOM: clientes
   const listaClientes = $('#listaClientes');
   const btnAddCliente = $('#btnAddCliente'); const btnExportClientes = $('#btnExportClientes'); const btnImportClientes = $('#btnImportClientes');
 
+  // DOM: facturas
   const filtroEstado = $('#filtroEstado'); const buscaCliente = $('#buscaCliente'); const listaFacturas = $('#listaFacturas');
   const btnExportFacturas = $('#btnExportFacturas'); const btnImportFacturas = $('#btnImportFacturas');
 
+  // DOM: resumen
   const resGlobal = $('#resGlobal'); const resPorCliente = $('#resPorCliente');
   const btnResetCliente = $('#btnResetCliente'); const btnResetGlobal = $('#btnResetGlobal');
 
+  // DOM: productos
   const listaProductos = $('#listaProductos'); const btnAddProducto = $('#btnAddProducto');
   const btnExportProductos = $('#btnExportProductos'); const btnImportProductos = $('#btnImportProductos');
+
+  // DOM: stats
+  const rangeSel = $('#range'); const statTotal = $('#statTotal'); const chartCanvas = $('#chart');
 
   // PRINT refs
   const pNum=$('#p-num'), pFecha=$('#p-fecha'), pProv=$('#p-prov'), pCli=$('#p-cli'), pTabla=$('#p-tabla tbody');
@@ -61,6 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function switchTab(id){
     $$('button.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===id));
     $$('section.panel').forEach(p=>p.classList.toggle('active', p.dataset.tabPanel===id));
+    if(id==='estadisticas'){ drawStats(); }
   }
   $$('button.tab').forEach(b=>b.addEventListener('click', ()=>switchTab(b.dataset.tab)));
   switchTab('factura');
@@ -86,8 +99,8 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="meta">${escapeHTML(c.nif||'')} · ${escapeHTML(c.dir||'')} · ${escapeHTML(c.tel||'')} · ${escapeHTML(c.email||'')}</div>
         </div>
         <div>
-          <button class="btn" data-e="edit" data-i="${idx}">Editar</button>
-          <button class="btn ghost" data-e="del" data-i="${idx}">Borrar</button>
+          <button class="btn small" data-e="edit" data-i="${idx}">Editar</button>
+          <button class="btn small ghost" data-e="del" data-i="${idx}">Borrar</button>
         </div>`;
       listaClientes.appendChild(div);
     });
@@ -115,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const nif = prompt('NIF/CIF:')||''; const dir=prompt('Dirección:')||''; const tel=prompt('Teléfono:')||''; const email=prompt('Email:')||'';
     clientes.push({nombre,nif,dir,tel,email}); saveClientes(); renderClientesSelect(); renderClientesLista();
   });
-  btnExportClientes?.addEventListener('click', ()=>downloadJSON(clientes,'clientes-apv14.json'));
+  btnExportClientes?.addEventListener('click', ()=>downloadJSON(clientes,'clientes-apv15.json'));
   btnImportClientes?.addEventListener('click', ()=>uploadJSON(arr=>{ if(Array.isArray(arr)){ clientes=arr; saveClientes(); renderClientesSelect(); renderClientesLista(); } }));
 
   selCliente?.addEventListener('change', ()=>{
@@ -127,83 +140,114 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ---------- PRODUCTOS ---------- */
   function saveProductos(){ localStorage.setItem(K_PRODUCTOS, JSON.stringify(productos)); }
 
-  // Tu lista (solo nombres)
+  // Semilla de nombres (solo si vacío)
   const PRODUCT_NAMES = [
     "GRANNY FRANCIA","MANZANA PINK LADY","MANDARINA COLOMBE","KIWI ZESPRI GOLD","PARAGUAYO","KIWI TOMASIN PLANCHA","PERA RINCON DEL SOTO","MELOCOTON PRIMERA","AGUACATE GRANEL","MARACUYÁ","MANZANA GOLDEN 24","PLATANO CANARIO PRIMERA","MANDARINA HOJA","MANZANA GOLDEN 2O","NARANJA TOMASIN","NECTARINA","NUECES","SANDIA","LIMON SEGUNDA","MANZANA FUJI","NARANAJA MESA SONRISA","JENGIBRE","BATATA","AJO PRIMERA","CEBOLLA NORMAL","CALABAZA GRANDE","PATATA LAVADA","TOMATE CHERRY RAMA","TOMATE CHERRY PERA","TOMATE DANIELA","TOMATE ROSA PRIMERA","CEBOLLINO","TOMATE ASURCADO MARRON","TOMATE RAMA","PIMIENTO PADRON","ZANAHORIA","PEPINO","CEBOLLETA","PUERROS","BROCOLI","JUDIA VERDE","BERENJENA","PIMIENTO ITALIANO VERDE","PIMIENTO ITALIANO ROJO","CHAMPIÑON","UVA ROJA","UVA BLANCA","ALCACHOFA","CALABACIN","COLIFLOR","BATAVIA","ICEBERG","MANDARINA SEGUNDA","MANZANA GOLDEN 28","NARANJA ZUMO","KIWI SEGUNDA","MANZANA ROYAL GALA 24","PLATANO CANARIO SUELTO","CEREZA","FRESAS","ARANDANOS","ESPINACA","PEREJIL","CILANTRO","ACELGAS","PIMIENTO VERDE","PIMIENTO ROJO","MACHO VERDE","MACHO MADURO","YUCA","AVOCADO","CEBOLLA ROJA","CILANTRO","MENTA","HABANERO","RABANITOS","POMELO","PAPAYA","REINETA 28","NISPERO","ALBARICOQUE","TOMATE PERA","TOMATE BOLA","TOMATE PINK","VALVENOSTA GOLDEN","MELOCOTON ROJO","MELON GALIA","APIO","NARANJA SANHUJA","LIMON PRIMERA","MANGO","MELOCOTON AMARILLO","VALVENOSTA ROJA","PIÑA","NARANJA HOJA","PERA CONFERENCIA SEGUNDA","CEBOLLA DULCE","TOMATE ASURCADO AZUL","ESPARRAGOS BLANCOS","ESPARRAGOS TRIGUEROS","REINETA PRIMERA","AGUACATE PRIMERA","COCO","NECTARINA SEGUNDA","REINETA 24","NECTARINA CARNE BLANCA","GUINDILLA","REINETA VERDE","PATATA 25KG","PATATA 5 KG","TOMATE RAFF","REPOLLO","KIWI ZESPRI","PARAGUAYO SEGUNDA","MELON","REINETA 26","PLATANO CANARIO SUELTO","TOMATE ROSA","MANZANA CRIPS","ALOE VERA PIEZAS","TOMATE ENSALADA","PATATA 10KG","MELON BOLLO","CIRUELA ROJA","LIMA","GUINEO VERDE","SETAS","BANANA","BONIATO","FRAMBUESA","BREVAS","PERA AGUA","YAUTIA","YAME","OKRA","MANZANA MELASSI","CACAHUETE","SANDIA NEGRA","SANDIA RAYADA","HIGOS","KUMATO","KIWI CHILE","MELOCOTON AMARILLO SEGUNDA","HIERBABUENA","REMOLACHA","LECHUGA ROMANA","CEREZA","KAKI","CIRUELA CLAUDIA","PERA LIMONERA","CIRUELA AMARILLA","HIGOS BLANCOS","UVA ALVILLO","LIMON EXTRA","PITAHAYA ROJA","HIGO CHUMBO","CLEMENTINA","GRANADA","NECTARINA PRIMERA BIS","CHIRIMOYA","UVA CHELVA","PIMIENTO CALIFORNIA VERDE","KIWI TOMASIN","PIMIENTO CALIFORNIA ROJO","MANDARINA SATSUMA","CASTAÑA","CAKI","MANZANA KANZI","PERA ERCOLINA","NABO","UVA ALVILLO NEGRA","CHAYOTE","ROYAL GALA 28","MANDARINA PRIMERA","PIMIENTO PINTON","MELOCOTON AMARILLO DE CALANDA","HINOJOS","MANDARINA DE HOJA","UVA ROJA PRIMERA","UVA BLANCA PRIMERA"
   ];
-
   function seedProductsIfEmpty(){
-    if(Array.isArray(productos) && productos.length>0) return; // ya tienes productos → no tocar
+    if(Array.isArray(productos) && productos.length>0) return;
     productos = PRODUCT_NAMES.map(n => ({ name: n })); // solo nombre
     saveProductos();
   }
 
+  function savePriceHist(){ localStorage.setItem(K_PRICEHIST, JSON.stringify(priceHist)); }
+  function pushPriceHistory(name, price){
+    if(!name || !(price>0)) return;
+    const arr = priceHist[name] || [];
+    arr.unshift({price, date: todayISO()});
+    priceHist[name] = arr.slice(0,10);
+    savePriceHist();
+  }
+  function lastPrice(name){ const arr = priceHist[name]; return arr?.length ? arr[0].price : null; }
+
   function renderProductos(){
-    listaProductos.innerHTML=''; if(productos.length===0){ listaProductos.innerHTML=`<div class="item">Sin productos. Usa “Añadir” o Importar JSON.</div>`; return; }
+    listaProductos.innerHTML='';
+    if(productos.length===0){ listaProductos.innerHTML=`<div class="item">Sin productos. Usa “Añadir” o Importar JSON.</div>`; return; }
     productos.forEach((p,idx)=>{
-      const last = lastPrice(p.name);
-      const div = document.createElement('div');
-      div.className='item';
-      div.innerHTML = `
-        <div>
-          <strong>${escapeHTML(p.name)}</strong>
-          <div class="meta">
-            ${p.mode?`modo: ${escapeHTML(p.mode)} · `:''}
-            ${p.boxKg!=null?`kg/caja: ${p.boxKg} · `:''}
-            ${p.price!=null?`precio base: ${money(p.price)} · `:''}
-            ${last?`último: ${money(last)}`:''}
-          </div>
+      const row = document.createElement('div');
+      row.className='product-row';
+      row.innerHTML = `
+        <input value="${escapeHTML(p.name||'')}" data-f="name">
+        <select data-f="mode">
+          <option value="" ${!p.mode?'selected':''}>—</option>
+          <option value="kg" ${p.mode==='kg'?'selected':''}>kg</option>
+          <option value="unidad" ${p.mode==='unidad'?'selected':''}>unidad</option>
+          <option value="caja" ${p.mode==='caja'?'selected':''}>caja</option>
+        </select>
+        <input type="number" step="0.01" min="0" value="${p.boxKg??''}" data-f="boxKg" placeholder="Kg/caja">
+        <input type="number" step="0.01" min="0" value="${p.price??''}" data-f="price" placeholder="€ base">
+        <input value="${escapeHTML(p.origin||'')}" data-f="origin" placeholder="Origen">
+        <div class="row-inline">
+          <button class="btn small" data-e="save" data-i="${idx}">Guardar</button>
+          <button class="btn small ghost" data-e="del" data-i="${idx}">Borrar</button>
         </div>
-        <div>
-          <button class="btn" data-e="edit" data-i="${idx}">Editar</button>
-          <button class="btn ghost" data-e="del" data-i="${idx}">Borrar</button>
-        </div>`;
-      listaProductos.appendChild(div);
+      `;
+      listaProductos.appendChild(row);
     });
+
     listaProductos.querySelectorAll('button').forEach(b=>{
       const i=+b.dataset.i;
       b.addEventListener('click', ()=>{
         if(b.dataset.e==='del'){
           if(confirm('¿Eliminar producto?')){ productos.splice(i,1); saveProductos(); renderProductos(); }
-        } else {
-          const p = productos[i];
-          const name = prompt('Nombre', p.name||'') ?? p.name;
-          const mode = prompt('Modo por defecto (kg/unidad/caja/manojo) — opcional', p.mode||'') || null;
-          const boxKg = prompt('Kg por caja (si aplica) — opcional', p.boxKg??'');
-          const boxKgNum = (boxKg===''||boxKg===null)?null:parseNum(boxKg);
-          const price = prompt('Precio base (€ por unidad o €/kg si caja) — opcional', p.price!=null?p.price:'');
-          const priceNum = (price===''||price===null)?null:parseNum(price);
-          productos[i]={name, mode:mode||null, boxKg:boxKgNum, price:priceNum}; saveProductos(); renderProductos();
+        }else{
+          const row = b.closest('.product-row');
+          const get = f => row.querySelector(`[data-f="${f}"]`).value.trim();
+          const name = get('name');
+          const mode = get('mode') || null;
+          const boxKgStr = get('boxKg'); const boxKg = boxKgStr===''?null:parseNum(boxKgStr);
+          const priceStr = get('price'); const price = priceStr===''?null:parseNum(priceStr);
+          const origin = get('origin') || null;
+          productos[i] = {name, mode, boxKg, price, origin};
+          saveProductos(); renderProductos();
         }
       });
     });
   }
-  function saveProductosAndRender(){ saveProductos(); renderProductos(); }
   btnAddProducto?.addEventListener('click', ()=>{
     const name = prompt('Nombre del producto:'); if(!name) return;
-    productos.push({name}); saveProductosAndRender();
+    productos.push({name}); saveProductos(); renderProductos();
   });
-  btnExportProductos?.addEventListener('click', ()=>downloadJSON(productos,'productos-apv14.json'));
-  btnImportProductos?.addEventListener('click', ()=>uploadJSON(arr=>{ if(Array.isArray(arr)){ productos=arr; saveProductosAndRender(); } }));
+  btnExportProductos?.addEventListener('click', ()=>downloadJSON(productos,'productos-apv15.json'));
+  btnImportProductos?.addEventListener('click', ()=>uploadJSON(arr=>{ if(Array.isArray(arr)){ productos=arr; saveProductos(); renderProductos(); } }));
 
-  function lastPrice(name){ const arr = priceHist[name]; return arr?.length ? arr[0].price : null; }
-
-  /* ---------- SUGERENCIAS & LÍNEAS ---------- */
-  function lineaHTML(name='', mode='', qty=1, price=0){
+  /* ---------- FACTURA: LÍNEAS ---------- */
+  function lineaHTML(){
     const wrap = document.createElement('div');
     wrap.className='linea';
     wrap.innerHTML = `
       <div class="suggest-box">
-        <input class="name" placeholder="Producto" value="${escapeHTML(name)}">
+        <input class="name" placeholder="Producto">
         <div class="suggest-list" hidden></div>
       </div>
-      <input class="mode" placeholder="Modo (kg/unidad/caja/manojo)" value="${escapeHTML(mode)}">
-      <input class="qty" type="number" inputmode="numeric" min="0" step="1" placeholder="Cant." value="${qty}">
-      <input class="price" type="number" min="0" step="0.01" placeholder="€/unidad o €/kg" value="${price||''}">
-      <button class="del">Eliminar</button>
+      <select class="mode">
+        <option value="">—</option>
+        <option value="kg">kg</option>
+        <option value="unidad">unidad</option>
+        <option value="caja">caja</option>
+      </select>
+      <input class="qty" type="number" inputmode="numeric" min="0" step="1" placeholder="Cant.">
+      <input class="gross" type="number" min="0" step="0.01" placeholder="Bruto kg">
+      <input class="tare" type="number" min="0" step="0.01" placeholder="Tara kg">
+      <input class="net" type="number" min="0" step="0.01" placeholder="Neto kg" disabled>
+      <input class="price" type="number" min="0" step="0.01" placeholder="Precio">
+      <input class="origin" placeholder="Origen">
+      <input class="amount" placeholder="Importe" disabled>
+      <button class="del">✕</button>
     `;
-    const nameInp=wrap.querySelector('.name'), list=wrap.querySelector('.suggest-list'), modeInp=wrap.querySelector('.mode'), priceInp=wrap.querySelector('.price');
 
+    const nameInp = wrap.querySelector('.name');
+    const list = wrap.querySelector('.suggest-list');
+    const modeInp = wrap.querySelector('.mode');
+    const qtyInp = wrap.querySelector('.qty');
+    const grossInp = wrap.querySelector('.gross');
+    const tareInp = wrap.querySelector('.tare');
+    const netInp = wrap.querySelector('.net');
+    const priceInp = wrap.querySelector('.price');
+    const originInp = wrap.querySelector('.origin');
+    const amtInp = wrap.querySelector('.amount');
+
+    // Sugerencias
     nameInp.addEventListener('input', ()=>{
       const q = nameInp.value.trim().toLowerCase(); if(!q){ list.hidden=true; list.innerHTML=''; return; }
       const matches = productos.filter(p=>p.name.toLowerCase().includes(q)).slice(0,12);
@@ -212,56 +256,94 @@ document.addEventListener('DOMContentLoaded', () => {
       matches.forEach(p=>{
         const last=lastPrice(p.name);
         const btn=document.createElement('button');
-        btn.textContent = `${p.name}${p.mode?` · ${p.mode}`:''}${p.boxKg?` · ${p.boxKg}kg/caja`:''}${p.price!=null?` · base ${money(p.price)}`:''}${last?` · último ${money(last)}`:''}`;
+        btn.textContent = `${p.name}${p.mode?` · ${p.mode}`:''}${p.boxKg?` · ${p.boxKg}kg/caja`:''}${p.price!=null?` · base ${p.price}€`:''}${p.origin?` · ${p.origin}`:''}${last?` · último ${last}€`:''}`;
         btn.addEventListener('click', ()=>{
           nameInp.value=p.name;
-          if(!modeInp.value && p.mode) modeInp.value=p.mode;
-          if(p.price!=null && !priceInp.value) priceInp.value=String(p.price).replace('.',',');
-          list.hidden=true; showPricePanel(p.name); recalc();
+          if(p.mode){ modeInp.value=p.mode; }
+          if(p.price!=null){ priceInp.value=p.price; }
+          if(p.origin){ originInp.value=p.origin; }
+          list.hidden=true;
+          showPricePanel(p.name);
+          recalcLine();
         });
         list.appendChild(btn);
       });
       list.hidden=false;
     });
-    nameInp.addEventListener('focus', ()=>{ if(nameInp.value) nameInp.dispatchEvent(new Event('input')); });
     nameInp.addEventListener('blur', ()=> setTimeout(()=>list.hidden=true,150));
     nameInp.addEventListener('dblclick', ()=>{ if(nameInp.value.trim()) showPricePanel(nameInp.value.trim()); });
 
+    // Recalc por cambios
+    [modeInp, qtyInp, grossInp, tareInp, priceInp].forEach(el=>el.addEventListener('input', recalcLine));
+
     wrap.querySelector('.del').addEventListener('click', ()=>{ wrap.remove(); recalc(); });
-    wrap.querySelectorAll('input').forEach(i=>i.addEventListener('input', ()=>{
-      if(i.classList.contains('qty')){ const v=Math.max(0,Math.floor(parseNum(i.value))); i.value=v; }
+
+    function recalcLine(){
+      const mode = (modeInp.value||'').toLowerCase();
+      const qty = Math.max(0, Math.floor(parseNum(qtyInp.value||0)));
+      const gross = Math.max(0, parseNum(grossInp.value||0));
+      const tare = Math.max(0, parseNum(tareInp.value||0));
+      const price = Math.max(0, parseNum(priceInp.value||0));
+      let net = 0;
+
+      if(gross>0){ net = Math.max(0, gross - tare); }
+      else if(mode==='caja'){
+        const p = findProducto(nameInp.value);
+        const kg = p?.boxKg || 0;
+        net = qty * kg;
+      } else if(mode==='kg'){
+        net = parseNum(qty) || 0; // cantidad como kg
+      } else if(mode==='unidad'){
+        net = qty; // neto interpretado como unidades
+      }
+
+      netInp.value = net ? net.toFixed(2) : '';
+      let amount = 0;
+      if(mode==='unidad'){ amount = qty * price; }
+      else { amount = net * price; }
+      amtInp.value = amount>0 ? amount.toFixed(2) : '';
+
       recalc();
-    }));
+    }
+
     return wrap;
   }
-  function addLinea(name='', mode='', qty=1, price=0){ const el=lineaHTML(name,mode,qty,price); lineasDiv.appendChild(el); recalc(); }
-  btnAddLinea?.addEventListener('click', ()=>addLinea());
-  btnVaciarLineas?.addEventListener('click', ()=>{ if(confirm('¿Vaciar todas las líneas?')){ lineasDiv.innerHTML=''; recalc(); } });
+
+  function addLinea(){ lineasDiv.appendChild(lineaHTML()); }
+  btnAddLinea?.addEventListener('click', addLinea);
+  btnVaciarLineas?.addEventListener('click', ()=>{ if(confirm('¿Vaciar todas las líneas?')){ lineasDiv.innerHTML=''; for(let i=0;i<5;i++) addLinea(); recalc(); } });
 
   function getLineas(){
+    // devolvemos solo las líneas con producto real
     return $$('.linea').map(r=>{
-      return {
-        name: r.querySelector('.name').value.trim(),
-        mode: r.querySelector('.mode').value.trim().toLowerCase(),
-        qty: Math.max(0, Math.floor(parseNum(r.querySelector('.qty').value))),
-        price: parseNum(r.querySelector('.price').value)
-      };
-    }).filter(l=>l.name && l.qty>0);
+      const name  = r.querySelector('.name').value.trim();
+      const mode  = r.querySelector('.mode').value.trim().toLowerCase();
+      const qty   = Math.max(0, Math.floor(parseNum(r.querySelector('.qty').value||0)));
+      const gross = Math.max(0, parseNum(r.querySelector('.gross').value||0));
+      const tare  = Math.max(0, parseNum(r.querySelector('.tare').value||0));
+      const net   = Math.max(0, parseNum(r.querySelector('.net').value||0));
+      const price = Math.max(0, parseNum(r.querySelector('.price').value||0));
+      const origin= r.querySelector('.origin').value.trim();
+      return {name,mode,qty,gross,tare,net,price,origin};
+    }).filter(l=>{
+      if(!l.name) return false;
+      // línea válida si tiene cantidad o neto/peso
+      return (l.qty>0) || (l.net>0) || (l.gross>0);
+    });
   }
 
-  function findProducto(name){ return productos.find(p=>(p.name||'').toLowerCase()===name.toLowerCase()); }
+  function findProducto(name){ return productos.find(p=>(p.name||'').toLowerCase()===String(name).toLowerCase()); }
+
   function lineImporte(l){
-    if(l.mode==='caja'){
-      const p=findProducto(l.name); const kg=p?.boxKg||0; return l.qty*kg*l.price;
-    }
-    return l.qty*l.price;
+    if(l.mode==='unidad'){ return l.qty * l.price; }
+    return l.net * l.price; // kg o caja usan neto
   }
 
   /* ---------- CÁLCULO ---------- */
   function recalc(){
     const ls = getLineas();
     let subtotal=0; ls.forEach(l=> subtotal+=lineImporte(l));
-    const transporte = $('#chkTransporte').checked ? subtotal*0.10 : 0;
+    const transporte = chkTransporte.checked ? subtotal*0.10 : 0;
     const baseMasTrans = subtotal + transporte;
     const iva = baseMasTrans * 0.04; // solo informativo
     const total = baseMasTrans;
@@ -276,18 +358,11 @@ document.addEventListener('DOMContentLoaded', () => {
     pendienteEl.textContent  = money(pendiente);
 
     fillPrint(ls,{subtotal,transporte,iva,total});
+    drawStats(); // refresca totales mostrados si estás en estadísticas
   }
-  [chkTransporte, chkIvaIncluido, estado, pagadoInp].forEach(el=>el?.addEventListener('input', recalc));
+  ;[chkTransporte, chkIvaIncluido, estado, pagadoInp].forEach(el=>el?.addEventListener('input', recalc));
 
   /* ---------- HISTORIAL PRECIOS ---------- */
-  function savePriceHist(){ localStorage.setItem(K_PRICEHIST, JSON.stringify(priceHist)); }
-  function pushPriceHistory(name, price){
-    if(!name || !(price>0)) return;
-    const arr = priceHist[name] || [];
-    arr.unshift({price, date:new Date().toISOString()});
-    priceHist[name] = arr.slice(0,10);
-    savePriceHist();
-  }
   function showPricePanel(name){
     const arr = (priceHist[name]||[]).slice(0,5);
     if(arr.length===0){
@@ -311,8 +386,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   btnGuardar?.addEventListener('click', ()=>{
     const ls=getLineas(); if(ls.length===0){ alert('Añade al menos una línea.'); return; }
-    const numero=genNumFactura(); const now=new Date().toISOString();
+    const numero=genNumFactura(); const now=todayISO();
 
+    // guardar historial de precios actuales
     ls.forEach(l=> pushPriceHistory(l.name, l.price));
 
     const subtotal=unMoney(subtotalEl.textContent);
@@ -336,7 +412,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   btnNueva?.addEventListener('click', ()=>{
-    lineasDiv.innerHTML=''; addLinea();
+    lineasDiv.innerHTML='';
+    for(let i=0;i<5;i++) addLinea();
     chkTransporte.checked=false; chkIvaIncluido.checked=true; estado.value='pendiente';
     pagadoInp.value=''; metodoPago.value='Efectivo'; observaciones.value='';
     recalc();
@@ -353,6 +430,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     return `<span class="badge bad">Impagada</span>`;
   }
+
   function renderFacturas(){
     listaFacturas.innerHTML='';
     const q=(buscaCliente.value||'').toLowerCase();
@@ -375,8 +453,9 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         <div class="row-inline">
           <strong>${money(f.totals.total)}</strong>
-          <button class="btn" data-e="ver" data-i="${idx}">Ver</button>
-          <button class="btn ghost" data-e="pdf" data-i="${idx}">PDF</button>
+          <button class="btn small" data-e="ver" data-i="${idx}">Ver</button>
+          <button class="btn small" data-e="cobrar" data-i="${idx}">Cobrar</button>
+          <button class="btn small ghost" data-e="pdf" data-i="${idx}">PDF</button>
         </div>`;
       listaFacturas.appendChild(div);
     });
@@ -384,16 +463,27 @@ document.addEventListener('DOMContentLoaded', () => {
     listaFacturas.querySelectorAll('button').forEach(b=>{
       const i=+b.dataset.i;
       b.addEventListener('click', ()=>{
-        const f=facturas[i]; fillPrint(f.lineas,f.totals,f); switchTab('factura');
-        if(b.dataset.e==='pdf'){ window.print(); } else { $('#printArea').scrollIntoView({behavior:'smooth'}); }
+        const f=facturas[i];
+        if(b.dataset.e==='pdf'){ fillPrint(f.lineas,f.totals,f); window.print(); return; }
+        if(b.dataset.e==='ver'){ fillPrint(f.lineas,f.totals,f); switchTab('factura'); $('#printArea').scrollIntoView({behavior:'smooth'}); return; }
+        if(b.dataset.e==='cobrar'){
+          const tot = f.totals.total||0;
+          const pagado = parseNum(prompt('Importe cobrado (deja vacío para cobrar todo):', String(tot)));
+          const nuevo = isNaN(pagado) ? tot : pagado;
+          f.totals.pagado = Math.min(tot, (f.totals.pagado||0) + nuevo);
+          f.totals.pendiente = Math.max(0, tot - f.totals.pagado);
+          f.estado = f.totals.pendiente>0 ? 'parcial' : 'pagado';
+          saveFacturas(); renderFacturas(); renderResumen(); drawStats();
+          return;
+        }
       });
     });
   }
   [filtroEstado, buscaCliente].forEach(el=>el?.addEventListener('input', renderFacturas));
-  btnExportFacturas?.addEventListener('click', ()=>downloadJSON(facturas,'facturas-apv14.json'));
-  btnImportFacturas?.addEventListener('click', ()=>uploadJSON(arr=>{ if(Array.isArray(arr)){ facturas=arr; saveFacturas(); renderFacturas(); renderResumen(); } }));
+  btnExportFacturas?.addEventListener('click', ()=>downloadJSON(facturas,'facturas-apv15.json'));
+  btnImportFacturas?.addEventListener('click', ()=>uploadJSON(arr=>{ if(Array.isArray(arr)){ facturas=arr; saveFacturas(); renderFacturas(); renderResumen(); drawStats(); } }));
 
-  /* ---------- RESUMEN ---------- */
+  /* ---------- RESUMEN (DEUDAS) ---------- */
   function renderResumen(){
     const totalPend = facturas.reduce((acc,f)=>acc+(f.totals?.pendiente||0),0);
     resGlobal.textContent = money(totalPend);
@@ -423,12 +513,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       return f;
     });
-    saveFacturas(); renderFacturas(); renderResumen();
+    saveFacturas(); renderFacturas(); renderResumen(); drawStats();
   });
   btnResetGlobal?.addEventListener('click', ()=>{
     if(!confirm('¿Resetear TODAS las deudas?')) return;
     facturas=facturas.map(f=>{ const n={...f, totals:{...f.totals}}; const tot=n.totals.total||0; n.totals.pagado=tot; n.totals.pendiente=0; n.estado='pagado'; return n; });
-    saveFacturas(); renderFacturas(); renderResumen();
+    saveFacturas(); renderFacturas(); renderResumen(); drawStats();
   });
 
   /* ---------- IMPRESIÓN ---------- */
@@ -455,8 +545,10 @@ document.addEventListener('DOMContentLoaded', () => {
       tr.innerHTML = `
         <td>${escapeHTML(l.name)}</td>
         <td>${escapeHTML(l.mode||'')}</td>
-        <td>${l.qty}</td>
+        <td>${l.qty||''}</td>
+        <td>${l.net?l.net.toFixed(2):''}</td>
         <td>${money(l.price)}</td>
+        <td>${escapeHTML(l.origin||'')}</td>
         <td>${money(lineImporte(l))}</td>`;
       pTabla.appendChild(tr);
     });
@@ -470,6 +562,103 @@ document.addEventListener('DOMContentLoaded', () => {
     pMetodo.textContent = factura?.metodo || metodoPago.value;
     pObs.textContent = factura?.obs || (observaciones.value||'—');
   }
+
+  /* ---------- ESTADÍSTICAS ---------- */
+  function groupByPeriod(period){ // 'daily' (14), 'weekly' (12), 'monthly' (12)
+    const now = new Date();
+    let buckets = [];
+    if(period==='daily'){
+      for(let i=13;i>=0;i--){
+        const d = new Date(now); d.setDate(d.getDate()-i);
+        const key = d.toISOString().slice(0,10);
+        buckets.push({label:key.slice(5), key, sum:0});
+      }
+      facturas.forEach(f=>{
+        const k = f.fecha.slice(0,10);
+        const b = buckets.find(x=>x.key===k);
+        if(b) b.sum += (f.totals?.total||0);
+      });
+    } else if(period==='weekly'){
+      // semana ISO simple: YYYY-Www
+      function isoWeek(d){ d=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())); const day=d.getUTCDay()||7; d.setUTCDate(d.getUTCDate()+4-day); const year=d.getUTCFullYear(); const week=Math.ceil(((d - new Date(Date.UTC(year,0,1)))/86400000+1)/7); return `${year}-W${String(week).padStart(2,'0')}`; }
+      const keys = [];
+      for(let i=11;i>=0;i--){
+        const d=new Date(now); d.setDate(d.getDate()-i*7);
+        keys.push(isoWeek(d));
+      }
+      buckets = keys.map(k=>({label:k.slice(5), key:k, sum:0}));
+      facturas.forEach(f=>{
+        const k = isoWeek(new Date(f.fecha));
+        const b = buckets.find(x=>x.key===k);
+        if(b) b.sum += (f.totals?.total||0);
+      });
+    } else { // monthly
+      const keys=[];
+      for(let i=11;i>=0;i--){
+        const d=new Date(now); d.setMonth(d.getMonth()-i);
+        const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        keys.push(k);
+      }
+      buckets = keys.map(k=>({label:k.slice(5), key:k, sum:0}));
+      facturas.forEach(f=>{
+        const d=new Date(f.fecha);
+        const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        const b=buckets.find(x=>x.key===k);
+        if(b) b.sum += (f.totals?.total||0);
+      });
+    }
+    return buckets;
+  }
+
+  function drawChart(canvas, data){
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const W = canvas.width, H = canvas.height, pad=40;
+
+    const labels = data.map(d=>d.label);
+    const values = data.map(d=>d.sum);
+    const max = Math.max(10, ...values)*1.1;
+
+    // axes
+    ctx.lineWidth=1;
+    ctx.strokeStyle='#ccc';
+    ctx.beginPath(); ctx.moveTo(pad, pad); ctx.lineTo(pad, H-pad); ctx.lineTo(W-pad, H-pad); ctx.stroke();
+
+    // y ticks
+    const steps = 5;
+    ctx.fillStyle='#666';
+    ctx.font='12px Poppins';
+    for(let i=0;i<=steps;i++){
+      const y = H-pad - (H-2*pad)*i/steps;
+      const val = max*i/steps;
+      ctx.fillText(money(val).replace(' €',''), 4, y+4);
+      ctx.strokeStyle='#eee'; ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W-pad, y); ctx.stroke();
+    }
+
+    // bars
+    const n = values.length;
+    const bw = (W-2*pad)/n*0.7;
+    const gap = (W-2*pad)/n*0.3;
+    let x = pad + gap/2;
+    ctx.fillStyle='#22c55e';
+    values.forEach((v,i)=>{
+      const h = (H-2*pad)*v/max;
+      ctx.fillRect(x, H-pad-h, bw, h);
+      ctx.save(); ctx.translate(x+bw/2, H-pad+14); ctx.rotate(-Math.PI/6);
+      ctx.fillStyle='#666'; ctx.fillText(labels[i], -16, 0);
+      ctx.restore();
+      x += bw+gap;
+    });
+  }
+
+  function drawStats(){
+    const period = rangeSel.value;
+    const buckets = groupByPeriod(period);
+    const total = buckets.reduce((a,b)=>a+b.sum,0);
+    statTotal.textContent = money(total);
+    drawChart(chartCanvas, buckets);
+  }
+  rangeSel?.addEventListener('change', drawStats);
 
   /* ---------- UTIL JSON ---------- */
   function downloadJSON(obj, filename){
@@ -494,11 +683,12 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
     saveClientes();
   }
-  seedProductsIfEmpty(); // ← carga tu lista solo la primera vez
+  seedProductsIfEmpty();
 
   renderClientesSelect(); renderClientesLista();
   renderProductos(); renderFacturas(); renderResumen();
 
-  if($$('.linea').length===0) addLinea();
+  // 5 líneas por defecto
+  if($$('.linea').length===0){ for(let i=0;i<5;i++) addLinea(); }
   recalc();
 });
