@@ -682,4 +682,24 @@ document.addEventListener('DOMContentLoaded', () => {
   renderClientesSelect(); renderClientesLista();
   renderProductos(); renderFacturas(); drawResumen(); // charts al abrir Resumen
   recalc();
+   /* ---- Forzar renderizado inicial después de la carga ---- */
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    try {
+      console.log('🟢 Verificando render inicial...');
+      seedClientesIfEmpty();
+      seedProductsIfEmpty();
+      renderClientesSelect();
+      renderClientesLista();
+      renderProductos();
+      renderFacturas();
+      drawResumen();
+      recalc();
+      console.log('✅ Clientes y productos renderizados correctamente');
+    } catch (e) {
+      console.error('⚠️ Error en render inicial:', e);
+    }
+  }, 800);
+});
+
 });
