@@ -799,3 +799,76 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+/* === 🎨 Paleta de colores + Botón flotante (modo visual) =================== */
+/* Paleta: Verde Kiwi, Azul, Naranja, Gris oscuro */
+const PALETA = [
+  { name: 'Kiwi', color: '#1f9d55' },
+  { name: 'Azul', color: '#2563eb' },
+  { name: 'Naranja', color: '#f59e0b' },
+  { name: 'Gris', color: '#1d2939' }
+];
+
+/* Crear botón flotante */
+const btnColor = document.createElement('div');
+btnColor.id = 'btnColor';
+btnColor.innerHTML = '🎨';
+btnColor.style.cssText = `
+  position:fixed;bottom:15px;right:15px;z-index:9999;
+  width:48px;height:48px;border-radius:50%;
+  background:#1f9d55;color:#fff;font-size:22px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25);
+  transition:background .3s ease;
+`;
+document.body.appendChild(btnColor);
+
+/* Crear menú desplegable */
+const menu = document.createElement('div');
+menu.id = 'colorMenu';
+menu.style.cssText = `
+  position:fixed;bottom:70px;right:20px;z-index:9998;
+  display:none;flex-direction:column;gap:8px;
+`;
+document.body.appendChild(menu);
+
+/* Añadir botones de colores */
+PALETA.forEach(p=>{
+  const c=document.createElement('button');
+  c.textContent=p.name;
+  c.style.cssText=`background:${p.color};border:none;padding:6px 10px;color:white;border-radius:6px;font-family:Poppins;cursor:pointer;`;
+  c.addEventListener('click',()=>{
+    document.documentElement.style.setProperty('--accent',p.color);
+    document.body.style.setProperty('border-color',p.color);
+    localStorage.setItem('arslan_color',p.color);
+    menu.style.display='none';
+  });
+  menu.appendChild(c);
+});
+
+/* Mostrar / ocultar menú */
+btnColor.addEventListener('click',()=>{
+  menu.style.display = menu.style.display==='flex' ? 'none' : 'flex';
+});
+
+/* Recordar color guardado */
+const guardado = localStorage.getItem('arslan_color');
+if(guardado){
+  document.documentElement.style.setProperty('--accent',guardado);
+}
+
+/* Estilo general: aplica color dinámico a botones y enlaces */
+const style = document.createElement('style');
+style.textContent = `
+  :root{ --accent: #1f9d55; }
+  button, .btn, .tab.active{
+    background: var(--accent)!important;
+    border-color: var(--accent)!important;
+  }
+  a, strong, .badge.ok{ color: var(--accent)!important; }
+  @media print{
+    body *{ color:#000!important; background:#fff!important; box-shadow:none!important; }
+    #btnColor,#colorMenu{ display:none!important; }
+  }
+`;
+document.head.appendChild(style);
+/* ========================================================================== */
