@@ -843,5 +843,41 @@ document.addEventListener("DOMContentLoaded",()=>{
     }
   });
 });
+/* ==== COLOR AUTOMÁTICO DEL PDF SEGÚN TEMA ==== */
+function getThemeColors() {
+  const theme = document.body.className;
+  switch (theme) {
+    case "theme-dark": return { accent: "#22c55e", text: "#f9fafb", bg: "#0f1115" };
+    case "theme-gold": return { accent: "#fbbf24", text: "#1c1917", bg: "#fffbea" };
+    case "theme-blue": return { accent: "#1d4ed8", text: "#0f172a", bg: "#f5faff" };
+    default: return { accent: "#1f9d55", text: "#111111", bg: "#ffffff" }; // claro KIWI
+  }
+}
+
+// Interceptar la creación de PDF
+const originalPDF = window.html2pdf;
+window.html2pdf = function() {
+  const colors = getThemeColors();
+
+  // Aplicar color temporal al encabezado del PDF
+  const header = document.querySelector("#printArea header, #p-prov");
+  if (header) {
+    header.style.backgroundColor = colors.accent;
+    header.style.color = colors.text;
+  }
+
+  // Llamar a la función original
+  const pdfInstance = originalPDF.apply(this, arguments);
+
+  // Restaurar color después
+  setTimeout(() => {
+    if (header) {
+      header.style.backgroundColor = "";
+      header.style.color = "";
+    }
+  }, 1500);
+
+  return pdfInstance;
+};
 
 
