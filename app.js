@@ -1,11 +1,12 @@
-/* ARSLAN PRO V10
-   - Logo kiwi (imagen)
-   - Sugerencias de productos (no autocompletar; solo si haces clic)
-   - Estados con colores: pagado (verde), parcial (ámbar, muestra resta), pendiente (rojo)
-   - Listado de facturas: ver estado, pendiente y reimprimir/ PDF
-   - Productos gestionables (sugerencias), recuerda último precio
-   - Cantidades enteras, transporte +10%, IVA 4% mostrado
-   - localStorage: clientes, facturas, productos
+/* ARSLAN PRO V11
+   - Tabs por clic (pantalla única)
+   - Sugerencias de productos (no autocompletar)
+   - Precio base y kg/caja configurables por producto
+   - Si MODO = "caja" y hay kg/caja -> total = cajas * kg/caja * €/kg
+   - Historial de precios por producto (últimos 5)
+   - Listado de facturas con colores de estado y reimpresión/PDF
+   - PDF compacto: 1 página
+   - localStorage: clientes, facturas, productos, priceHist
 */
 
 const $ = s => document.querySelector(s);
@@ -14,18 +15,17 @@ const money = n => (isNaN(n)?0:n).toFixed(2).replace('.', ',') + " €";
 const parseNum = v => { const n = parseFloat(String(v).replace(',', '.')); return isNaN(n) ? 0 : n; };
 
 // Storage keys
-const K_CLIENTES = 'apv10_clientes';
-const K_FACTURAS = 'apv10_facturas';
-const K_PRODUCTOS = 'apv10_productos';
-const K_PRICEHIST = 'apv10_pricehist'; // { "Producto": lastPrice }
+const K_CLIENTES = 'apv11_clientes';
+const K_FACTURAS = 'apv11_facturas';
+const K_PRODUCTOS = 'apv11_productos'; // {name, mode, boxKg, price}
+const K_PRICEHIST = 'apv11_pricehist'; // { "Producto": [ {price, dateISO}, ... ] }
 
-// Estado
 let clientes = JSON.parse(localStorage.getItem(K_CLIENTES) || '[]');
 let facturas = JSON.parse(localStorage.getItem(K_FACTURAS) || '[]');
 let productos = JSON.parse(localStorage.getItem(K_PRODUCTOS) || '[]');
 let priceHist = JSON.parse(localStorage.getItem(K_PRICEHIST) || '{}');
 
-// Elementos UI (idénticos a V9 más productos)
+// ELEMENTOS
 const selCliente = $('#selCliente');
 const btnNuevoCliente = $('#btnNuevoCliente');
 const btnAddCliente = $('#btnAddCliente');
@@ -79,7 +79,10 @@ const pTabla = $('#p-tabla tbody');
 const pSub = $('#p-sub'), pTra = $('#p-tra'), pIva = $('#p-iva'), pTot = $('#p-tot');
 const pEstado = $('#p-estado'), pMetodo = $('#p-metodo'), pObs = $('#p-obs');
 
-// Tabs
+const pricePanel = $('#pricePanel');
+const ppBody = $('#ppBody');
+
+// Tabs por clic
 function switchTab(id){
   $$('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===id));
   $$('.panel').forEach(p=>p.classList.toggle('active', p.dataset.tabPanel===id));
@@ -164,60 +167,25 @@ selCliente.addEventListener('change', ()=>{
   cli.email.value = c.email||'';
 });
 
-// ---------- PRODUCTOS (SUGERENCIAS) ----------
-function baseProductosDefault(){
-  return [
-    {name:'Plátano macho maduro', mode:'caja'},
-    {name:'Plátano macho verde', mode:'caja'},
-    {name:'Guineo', mode:'caja'},
-    {name:'Aguacate granel', mode:'kg'},
-    {name:'Aguacate Hass caja', mode:'caja'},
-    {name:'Mango', mode:'kg'},
-    {name:'Cilantro', mode:'manojo'},
-    {name:'Perejil', mode:'manojo'},
-    {name:'Apio', mode:'manojo'},
-    {name:'Yuca', mode:'kg'},
-    {name:'Ñame', mode:'kg'},
-    {name:'Eddo', mode:'kg'},
-    {name:'Jengibre', mode:'kg'},
-    {name:'Lima caja', mode:'caja'},
-    {name:'Limón', mode:'kg'},
-    {name:'Naranja zumo', mode:'kg'},
-    {name:'Naranja mesa', mode:'kg'},
-    {name:'Manzana Pink Lady', mode:'kg'},
-    {name:'Manzana Golden', mode:'kg'},
-    {name:'Manzana Royal Gala', mode:'kg'},
-    {name:'Pera Rincón del Soto', mode:'kg'},
-    {name:'Pera Conferencia', mode:'kg'},
-    {name:'Tomate Daniela', mode:'kg'},
-    {name:'Tomate Rama', mode:'kg'},
-    {name:'Tomate Pera', mode:'kg'},
-    {name:'Cebolla normal', mode:'kg'},
-    {name:'Cebolla dulce', mode:'kg'},
-    {name:'Boniato', mode:'kg'},
-    {name:'Auyama', mode:'kg'},
-    {name:'Brócoli', mode:'kg'}
-  ];
-}
+// ---------- PRODUCTOS ----------
 function ensureProductos(){
-  if(!Array.isArray(productos) || productos.length===0){
-    productos = baseProductosDefault();
-    localStorage.setItem(K_PRODUCTOS, JSON.stringify(productos));
-  }
+  if(!Array.isArray(productos)) productos = [];
+  localStorage.setItem(K_PRODUCTOS, JSON.stringify(productos));
 }
 function renderProductos(){
   listaProductos.innerHTML = '';
   if(productos.length===0){
-    listaProductos.innerHTML = `<div class="item"><span>No hay productos.</span></div>`;
+    listaProductos.innerHTML = `<div class="item"><span>No hay productos. Usa "Añadir producto" o Importar JSON.</span></div>`;
     return;
   }
   productos.forEach((p, idx)=>{
-    const last = priceHist[p.name] ?? null;
+    const last = lastPrice(p.name);
     const div = document.createElement('div');
     div.className = 'item';
     div.innerHTML = `
       <div>
-        <strong>${p.name}</strong> <span class="meta">· modo: ${p.mode||'-'} ${last?`· último precio: ${money(last)}`:''}</span>
+        <strong>${p.name}</strong>
+        <div class="meta">modo: ${p.mode||'-'} · kg/caja: ${p.boxKg||'-'} · precio base: ${p.price!=null?money(p.price):'-'} ${last?`· último: ${money(last)}`:''}</div>
       </div>
       <div>
         <button class="btn" data-e="edit" data-i="${idx}">Editar</button>
@@ -226,6 +194,7 @@ function renderProductos(){
     `;
     listaProductos.appendChild(div);
   });
+
   listaProductos.querySelectorAll('button').forEach(b=>{
     const i = +b.dataset.i;
     b.addEventListener('click', ()=>{
@@ -238,8 +207,11 @@ function renderProductos(){
       } else {
         const p = productos[i];
         const name = prompt('Nombre del producto', p.name||'') ?? p.name;
-        const mode = prompt('Modo por defecto (kg/unidad/caja/manojo)', p.mode||'') ?? p.mode;
-        productos[i] = {name, mode};
+        const mode = prompt('Modo por defecto (kg/unidad/caja/manojo)', p.mode||'kg') ?? p.mode;
+        const boxKg = parseNum(prompt('Kg por caja (si aplica, ej. 22)', p.boxKg||'')) || null;
+        const price = prompt('Precio base (€ por unidad o €/kg si caja)', p.price!=null?p.price:'');
+        const priceNum = price===''?null:parseNum(price);
+        productos[i] = {name, mode, boxKg, price: priceNum};
         localStorage.setItem(K_PRODUCTOS, JSON.stringify(productos));
         renderProductos();
       }
@@ -247,17 +219,19 @@ function renderProductos(){
   });
 }
 btnAddProducto?.addEventListener('click', ()=>{
-  const name = prompt('Nombre del producto');
-  if(!name) return;
+  const name = prompt('Nombre del producto'); if(!name) return;
   const mode = prompt('Modo por defecto (kg/unidad/caja/manojo)','kg') || 'kg';
-  productos.push({name, mode});
+  const boxKg = parseNum(prompt('Kg por caja (si aplica, ej. 22)','')) || null;
+  const price = prompt('Precio base (€ por unidad o €/kg si caja)','');
+  const priceNum = price===''?null:parseNum(price);
+  productos.push({name, mode, boxKg, price: priceNum});
   localStorage.setItem(K_PRODUCTOS, JSON.stringify(productos));
   renderProductos();
 });
 btnExportProductos?.addEventListener('click', ()=>{
   const blob = new Blob([JSON.stringify(productos,null,2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = 'productos-arslan-pro-v10.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  const a = document.createElement('a'); a.href = url; a.download = 'productos-arslan-pro-v11.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
 });
 btnImportProductos?.addEventListener('click', ()=>{
   const inp = document.createElement('input'); inp.type='file'; inp.accept='application/json';
@@ -276,7 +250,7 @@ btnImportProductos?.addEventListener('click', ()=>{
   inp.click();
 });
 
-// ---------- LÍNEAS + SUGERENCIAS ----------
+// ---------- SUGERENCIAS EN LÍNEAS ----------
 function lineaHTML(name='', mode='', qty=1, price=0){
   const wrap = document.createElement('div');
   wrap.className = 'linea';
@@ -287,7 +261,7 @@ function lineaHTML(name='', mode='', qty=1, price=0){
     </div>
     <input class="mode" placeholder="Modo (kg/unidad/caja/manojo)" value="${mode}">
     <input class="qty" type="number" inputmode="numeric" min="0" step="1" placeholder="Cant." value="${qty}">
-    <input class="price" type="number" min="0" step="0.01" placeholder="€/unidad" value="${price}">
+    <input class="price" type="number" min="0" step="0.01" placeholder="€/unidad o €/kg" value="${price}">
     <button class="del">Eliminar</button>
   `;
 
@@ -296,28 +270,31 @@ function lineaHTML(name='', mode='', qty=1, price=0){
   const modeInp = wrap.querySelector('.mode');
   const priceInp = wrap.querySelector('.price');
 
-  // Sugerencias: mostrar al teclear, sin autocompletar; aplica solo si clicas
+  // Sugerencias (no autocompleta hasta click)
   nameInp.addEventListener('input', ()=>{
     const q = nameInp.value.trim().toLowerCase();
     if(!q){ list.hidden = true; list.innerHTML = ''; return; }
-    const matches = productos.filter(p=>p.name.toLowerCase().includes(q)).slice(0,8);
+    const matches = productos.filter(p=>p.name.toLowerCase().includes(q)).slice(0,10);
     if(matches.length===0){ list.hidden=true; list.innerHTML=''; return; }
     list.innerHTML = '';
     matches.forEach(p=>{
+      const last = lastPrice(p.name);
       const btn = document.createElement('button');
-      const last = priceHist[p.name];
-      btn.textContent = p.name + (last ? `  · último: ${money(last)}` : '');
+      btn.textContent = `${p.name}  ${p.mode?`· ${p.mode}`:''} ${p.boxKg?`· ${p.boxKg}kg/caja`:''} ${p.price!=null?`· base ${money(p.price)}`:''} ${last?`· último ${money(last)}`:''}`;
       btn.addEventListener('click', ()=>{
         nameInp.value = p.name; // eliges la sugerencia
         if(!modeInp.value) modeInp.value = p.mode || '';
-        if(last!=null && !priceInp.value) priceInp.value = String(last).replace('.', ','); // sólo si vacío
+        // Si hay precio base, úsalo (editable)
+        if(p.price!=null && !priceInp.value) priceInp.value = String(p.price).replace('.', ',');
         list.hidden = true;
+        showPricePanel(p.name); // abrir historial para ese producto
         recalc();
       });
       list.appendChild(btn);
     });
     list.hidden = false;
   });
+  nameInp.addEventListener('focus', ()=>{ if(nameInp.value) nameInp.dispatchEvent(new Event('input')); });
   nameInp.addEventListener('blur', ()=> setTimeout(()=>list.hidden=true, 150));
 
   wrap.querySelector('.del').addEventListener('click', ()=>{ wrap.remove(); recalc(); });
@@ -328,6 +305,10 @@ function lineaHTML(name='', mode='', qty=1, price=0){
     }
     recalc();
   }));
+
+  // Al hacer doble clic en el nombre, abrir historial
+  nameInp.addEventListener('dblclick', ()=>{ if(nameInp.value.trim()) showPricePanel(nameInp.value.trim()); });
+
   return wrap;
 }
 function addLinea(name='', mode='', qty=1, price=0){
@@ -343,16 +324,32 @@ function getLineas(){
   return $$('.linea').map(r=>{
     return {
       name: r.querySelector('.name').value.trim(),
-      mode: r.querySelector('.mode').value.trim(),
+      mode: r.querySelector('.mode').value.trim().toLowerCase(),
       qty: Math.max(0, Math.floor(parseNum(r.querySelector('.qty').value))),
       price: parseNum(r.querySelector('.price').value)
     };
   }).filter(l=>l.name && l.qty>0);
 }
+
+function findProductoByName(name){
+  return productos.find(p=> (p.name||'').toLowerCase() === name.toLowerCase());
+}
+
+function lineImporte(l){
+  // Si es caja y hay kg/caja -> total = cajas * kg/caja * €/kg
+  if(l.mode==='caja'){
+    const prod = findProductoByName(l.name);
+    const kg = prod?.boxKg || 0;
+    return l.qty * kg * l.price;
+  }
+  // resto: qty * price
+  return l.qty * l.price;
+}
+
 function recalc(){
   const ls = getLineas();
   let subtotal = 0;
-  ls.forEach(l=> subtotal += l.qty * l.price);
+  ls.forEach(l=> subtotal += lineImporte(l));
 
   const transporte = chkTransporte.checked ? subtotal*0.10 : 0;
   const baseMasTrans = subtotal + transporte;
@@ -373,7 +370,34 @@ function recalc(){
 }
 [chkTransporte, chkIvaIncluido, estado, pagadoInp].forEach(el=>el.addEventListener('input', recalc));
 
-// ---------- GUARDAR / NUMERO ----------
+// ---------- HISTORIAL DE PRECIOS ----------
+function pushPriceHistory(name, price){
+  if(!name || !(price>0)) return;
+  const arr = priceHist[name] || [];
+  arr.unshift({price, date: new Date().toISOString()});
+  priceHist[name] = arr.slice(0, 10); // guardamos últimos 10
+  localStorage.setItem(K_PRICEHIST, JSON.stringify(priceHist));
+}
+function lastPrice(name){
+  const arr = priceHist[name];
+  return arr && arr.length ? arr[0].price : null;
+}
+function showPricePanel(name){
+  const arr = (priceHist[name]||[]).slice(0,5);
+  if(arr.length===0){
+    ppBody.innerHTML = `<div class="pp-row"><span>${name}</span><span>Sin historial</span></div>`;
+  } else {
+    ppBody.innerHTML = `<div class="pp-row"><strong>${name}</strong><span>últimos</span></div>` +
+      arr.map(x=>{
+        const d = new Date(x.date).toLocaleString();
+        return `<div class="pp-row"><span>${d}</span><strong>${money(x.price)}</strong></div>`;
+      }).join('');
+  }
+  pricePanel.hidden = false;
+}
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') pricePanel.hidden = true; });
+
+// ---------- GUARDAR FACTURA ----------
 function genNumFactura(){
   const d = new Date();
   const pad = n => String(n).padStart(2,'0');
@@ -387,11 +411,8 @@ btnGuardar.addEventListener('click', ()=>{
   const numero = genNumFactura();
   const now = new Date().toISOString();
 
-  // recordar últimos precios por producto
-  ls.forEach(l=>{
-    if(l.name && l.price>0){ priceHist[l.name] = l.price; }
-  });
-  localStorage.setItem(K_PRICEHIST, JSON.stringify(priceHist));
+  // registrar historial de precio por producto (precio ingresado actual)
+  ls.forEach(l=> pushPriceHistory(l.name, l.price));
 
   const subtotal = unMoney(subtotalEl.textContent);
   const transporte = unMoney(transpEl.textContent);
@@ -436,7 +457,7 @@ btnNueva.addEventListener('click', ()=>{
 // ---------- IMPRIMIR ----------
 btnImprimir.addEventListener('click', ()=> window.print());
 
-// ---------- FACTURAS LISTA (con colores y PDF) ----------
+// ---------- FACTURAS LISTA ----------
 function badgeEstado(f){
   if(f.estado==='pagado') return `<span class="badge ok">Pagada</span>`;
   if(f.estado==='parcial'){
@@ -459,7 +480,7 @@ function renderFacturas(){
     return;
   }
 
-  arr.slice(0,100).forEach((f,idx)=>{
+  arr.slice(0,200).forEach((f,idx)=>{
     const div = document.createElement('div');
     div.className = 'item';
     const fecha = new Date(f.fecha).toLocaleString();
@@ -477,20 +498,14 @@ function renderFacturas(){
     listaFacturas.appendChild(div);
   });
 
-  // Acciones ver/pdf
   listaFacturas.querySelectorAll('button').forEach(b=>{
     const i = +b.dataset.i;
     b.addEventListener('click', ()=>{
       const f = facturas[i];
-      // Relleno el printArea con los datos guardados
       fillPrint(f.lineas, f.totals, f);
-      if(b.dataset.e==='pdf'){
-        window.print();
-      }else{
-        // Solo mostrar: hago scroll al documento
-        switchTab('factura');
-        document.getElementById('printArea').scrollIntoView({behavior:'smooth'});
-      }
+      switchTab('factura');
+      if(b.dataset.e==='pdf'){ window.print(); }
+      else { document.getElementById('printArea').scrollIntoView({behavior:'smooth'}); }
     });
   });
 }
@@ -582,7 +597,7 @@ function fillPrint(lines, totals, factura=null){
       <td>${escapeHTML(l.mode||'')}</td>
       <td>${l.qty}</td>
       <td>${money(l.price)}</td>
-      <td>${money(l.qty*l.price)}</td>
+      <td>${money(lineImporte(l))}</td>
     `;
     pTabla.appendChild(tr);
   });
@@ -600,23 +615,6 @@ function escapeHTML(s=''){ return s.replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&
 
 // ---------- INICIO ----------
 function boot(){
-  // Semillas
   if(clientes.length===0){
     clientes = [
-      {nombre:'Riviera', nif:'B16794893', dir:'Paseo del Espolón, Burgos', tel:'', email:''},
-      {nombre:'Alesal Pan y Café S.L', nif:'B09582420', dir:'C/ San Lesmes 1', tel:'', email:''}
-    ];
-    localStorage.setItem(K_CLIENTES, JSON.stringify(clientes));
-  }
-  ensureProductos();
-
-  renderClientesSelect();
-  renderClientesLista();
-  renderProductos();
-  renderFacturas();
-  renderResumen();
-
-  if($$('.linea').length===0) addLinea();
-  recalc();
-}
-boot();
+      {nombre:'Riviera', nif:'B16
