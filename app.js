@@ -812,5 +812,36 @@ document.addEventListener("DOMContentLoaded",()=>{
     }
   });
 });
+/* ==== SELECTOR DE TEMA ==== */
+document.addEventListener("DOMContentLoaded",()=>{
+  const btnTheme=document.getElementById("btnTheme");
+  const themeMenu=document.getElementById("themeMenu");
+
+  // cargar tema guardado
+  const savedTheme=localStorage.getItem("arslan_theme")||"theme-light";
+  document.body.className=savedTheme;
+
+  // abrir/cerrar menú
+  btnTheme?.addEventListener("click",()=>{
+    themeMenu.hidden=!themeMenu.hidden;
+  });
+
+  // seleccionar tema
+  themeMenu?.querySelectorAll("button").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const theme=btn.dataset.theme;
+      document.body.className=theme;
+      localStorage.setItem("arslan_theme",theme);
+      themeMenu.hidden=true;
+    });
+  });
+
+  // cerrar al clicar fuera
+  document.addEventListener("click",(e)=>{
+    if(!themeMenu.contains(e.target)&&!btnTheme.contains(e.target)){
+      themeMenu.hidden=true;
+    }
+  });
+});
 
 
