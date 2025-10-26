@@ -854,4 +854,42 @@ function drawResumen(){ drawKPIs(); }
   aplicarTema(guardadoTema);
   if(guardadoDark) toggleDark();
 })();
+/* ================================
+   🥝 LOGO FIJO ANIMADO EN ESQUINA
+   ================================ */
+
+(function(){
+  const logo = document.createElement('img');
+  logo.src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Kiwi_aka.jpg/240px-Kiwi_aka.jpg';
+  logo.alt = 'Kiwi';
+  logo.id = 'kiwiLogo';
+  document.body.appendChild(logo);
+
+  const style = document.createElement('style');
+  style.textContent = `
+    #kiwiLogo {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: 2px solid var(--accent, #22c55e);
+      box-shadow: 0 0 8px rgba(0,0,0,0.2);
+      cursor: pointer;
+      transition: transform 0.4s ease, box-shadow 0.4s ease;
+      z-index: 9999;
+    }
+    #kiwiLogo:hover {
+      transform: rotate(15deg) scale(1.1);
+      box-shadow: 0 0 15px rgba(34,197,94,0.5);
+    }
+  `;
+  document.head.appendChild(style);
+
+  // Al hacer clic en el logo, volver al inicio (Factura)
+  logo.addEventListener('click', ()=>{
+    document.querySelector('[data-tab="factura"]')?.click();
+  });
+})();
 
