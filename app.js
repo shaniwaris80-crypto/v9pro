@@ -926,4 +926,123 @@ document.addEventListener("DOMContentLoaded",()=>{
     }
   });
 });
+/* ==== PIE DE PÁGINA AUTOMÁTICO EN PDF ==== */
+async function addFooterToPDF() {
+  const colors = getThemeColors();
+
+  // Crear pie de página temporal
+  const footerDiv = document.createElement("div");
+  footerDiv.id = "pdfFooter";
+  footerDiv.style.textAlign = "center";
+  footerDiv.style.padding = "8px 0";
+  footerDiv.style.marginTop = "25px";
+  footerDiv.style.borderTop = `2px solid ${colors.accent}`;
+  footerDiv.style.fontSize = "12px";
+  footerDiv.style.color = colors.text;
+  footerDiv.innerHTML = `
+    <p style="margin:3px 0;font-family:Poppins,sans-serif;">
+      Gracias por su confianza — IVA incluido en los precios — Página 1 de 1
+    </p>
+    <p style="margin:0;color:${colors.accent};font-weight:500;">
+      © 2025 ARSLAN PRO V10.4 KIWI Edition
+    </p>
+  `;
+
+  // Insertar al final del área de impresión
+  const printArea = document.getElementById("printArea");
+  printArea.appendChild(footerDiv);
+
+  // Configurar nombre del archivo PDF
+  const cliente = document.querySelector('#cliNombre')?.value || 'Cliente';
+  const fecha = new Date().toLocaleDateString('es-ES', {
+    day: '2-digit', month: '2-digit', year: 'numeric'
+  });
+  const safeCliente = cliente.replace(/\s+/g,'');
+
+  const opt = {
+    margin: 10,
+    filename: `Factura-${safeCliente}-${fecha}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  await html2pdf().set(opt).from(printArea).save();
+
+  // Eliminar el pie después de generar el PDF
+  footerDiv.remove();
+}
+
+/* ==== ACTUALIZAR EVENTO PDF PARA INCLUIR ENCABEZADO + PIE ==== */
+document.addEventListener("DOMContentLoaded", () => {
+  const listaFacturas = document.getElementById("listaFacturas");
+  if (!listaFacturas) return;
+
+  listaFacturas.addEventListener("click", async (e) => {
+    if (e.target.matches("[data-e='pdf']")) {
+      e.preventDefault();
+
+      // Generar encabezado + pie
+      const colors = getThemeColors();
+      const cliente = document.querySelector('#cliNombre')?.value || 'Cliente';
+      const fecha = new Date().toLocaleDateString('es-ES', {
+        day: '2-digit', month: '2-digit', year: 'numeric'
+      });
+
+      // Crear encabezado temporal
+      const headerDiv = document.createElement("div");
+      headerDiv.id = "pdfHeader";
+      headerDiv.style.textAlign = "center";
+      headerDiv.style.padding = "10px 0 15px 0";
+      headerDiv.style.borderBottom = `3px solid ${colors.accent}`;
+      headerDiv.style.marginBottom = "15px";
+      headerDiv.innerHTML = `
+        <img src="logo-kiwi.png" alt="Kiwi Logo" style="height:55px;margin-bottom:5px;">
+        <h2 style="color:${colors.accent};font-family:Poppins,sans-serif;margin:0;">
+          ARSLAN PRO V10.4 KIWI Edition
+        </h2>
+        <p style="margin:2px 0 0 0;color:${colors.text};font-size:13px;">
+          Factura para <strong>${cliente}</strong> — ${fecha}
+        </p>
+      `;
+
+      const printArea = document.getElementById("printArea");
+      printArea.prepend(headerDiv);
+
+      // Crear pie temporal
+      const footerDiv = document.createElement("div");
+      footerDiv.id = "pdfFooter";
+      footerDiv.style.textAlign = "center";
+      footerDiv.style.padding = "8px 0";
+      footerDiv.style.marginTop = "25px";
+      footerDiv.style.borderTop = `2px solid ${colors.accent}`;
+      footerDiv.style.fontSize = "12px";
+      footerDiv.style.color = colors.text;
+      footerDiv.innerHTML = `
+        <p style="margin:3px 0;font-family:Poppins,sans-serif;">
+          Gracias por su confianza — IVA incluido en los precios — Página 1 de 1
+        </p>
+        <p style="margin:0;color:${colors.accent};font-weight:500;">
+          © 2025 ARSLAN PRO V10.4 KIWI Edition
+        </p>
+      `;
+      printArea.appendChild(footerDiv);
+
+      // Crear y guardar PDF
+      const safeCliente = cliente.replace(/\s+/g,'');
+      const opt = {
+        margin: 10,
+        filename: `Factura-${safeCliente}-${fecha}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      await html2pdf().set(opt).from(printArea).save();
+
+      // Eliminar elementos temporales
+      headerDiv.remove();
+      footerDiv.remove();
+    }
+  });
+});
 
