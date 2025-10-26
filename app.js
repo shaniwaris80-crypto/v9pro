@@ -1,10 +1,8 @@
 /* =======================================================
-   ARSLAN PRO V10.3 Pro+ — app.js
-   + Pagos parciales (historial)
-   + Estados editables con colores
-   + Pestañas Pendientes y Ventas (KPIs, gráficos, Top 10)
-   + PDF A4 con QR de verificación/pago
-   + Dark mode auto (CSS)
+   ARSLAN PRO V10.4 — KIWI Edition (Full)
+   - Mantiene TODAS las funciones (V10.3) y mejora UI/UX
+   - Totales corregidos, autocompletado real, logo visible
+   - PDF A4 con QR, pagos parciales, pendientes, ventas+top
 ======================================================= */
 (function(){
 "use strict";
@@ -20,10 +18,10 @@ const fmtDateDMY = d => `${String(d.getDate()).padStart(2,'0')}-${String(d.getMo
 const unMoney = s => parseFloat(String(s).replace(/\./g,'').replace(',','.').replace(/[^\d.]/g,'')) || 0;
 
 /* ---------- KEYS ---------- */
-const K_CLIENTES='arslan_v103_clientes';
-const K_PRODUCTOS='arslan_v103_productos';
-const K_FACTURAS='arslan_v103_facturas';
-const K_PRICEHIST='arslan_v103_pricehist';
+const K_CLIENTES='arslan_v104_clientes';
+const K_PRODUCTOS='arslan_v104_productos';
+const K_FACTURAS='arslan_v104_facturas';
+const K_PRICEHIST='arslan_v104_pricehist';
 
 /* ---------- ESTADO ---------- */
 let clientes  = load(K_CLIENTES, []);
@@ -47,7 +45,7 @@ function switchTab(id){
 }
 $$('button.tab').forEach(b=>b.addEventListener('click', ()=>switchTab(b.dataset.tab)));
 
-/* ---------- SEED DATA (igual que v10.1, recortado aquí por brevedad) ---------- */
+/* ---------- SEED DATA ---------- */
 function uniqueByName(arr){
   const map=new Map();
   arr.forEach(c=>{ const k=(c.nombre||'').trim().toLowerCase(); if(k && !map.has(k)) map.set(k,c); });
@@ -82,7 +80,7 @@ function seedClientesIfEmpty(){
   ]);
   save(K_CLIENTES, clientes);
 }
-const PRODUCT_NAMES = [/* (misma lista completa que v10.1) */ 
+const PRODUCT_NAMES = [
 "GRANNY FRANCIA","MANZANA PINK LADY","MANDARINA COLOMBE","KIWI ZESPRI GOLD","PARAGUAYO","KIWI TOMASIN PLANCHA","PERA RINCON DEL SOTO","MELOCOTON PRIMERA","AGUACATE GRANEL","MARACUYÁ",
 "MANZANA GOLDEN 24","PLATANO CANARIO PRIMERA","MANDARINA HOJA","MANZANA GOLDEN 20","NARANJA TOMASIN","NECTARINA","NUECES","SANDIA","LIMON SEGUNDA","MANZANA FUJI",
 "NARANJA MESA SONRISA","JENGIBRE","BATATA","AJO PRIMERA","CEBOLLA NORMAL","CALABAZA GRANDE","PATATA LAVADA","TOMATE CHERRY RAMA","TOMATE CHERRY PERA","TOMATE DANIELA","TOMATE ROSA PRIMERA",
@@ -103,6 +101,15 @@ function seedProductsIfEmpty(){
   if(productos.length) return;
   productos = PRODUCT_NAMES.map(n=>({name:n}));
   save(K_PRODUCTOS, productos);
+}
+
+/* ---------- PROVIDER DEFAULTS (tus datos) ---------- */
+function setProviderDefaultsIfEmpty(){
+  if(!$('#provNombre').value) $('#provNombre').value = 'Mohammad Arslan Waris';
+  if(!$('#provNif').value)    $('#provNif').value    = 'X6389988J';
+  if(!$('#provDir').value)    $('#provDir').value    = 'Calle San Pablo 17, 09003 Burgos';
+  if(!$('#provTel').value)    $('#provTel').value    = '631 667 893';
+  if(!$('#provEmail').value)  $('#provEmail').value  = 'shaniwaris80@gmail.com';
 }
 
 /* ---------- HISTORIAL DE PRECIOS ---------- */
@@ -225,13 +232,13 @@ function renderProductos(){
 }
 $('#buscarProducto')?.addEventListener('input', renderProductos);
 
-/* ---------- FACTURA: LÍNEAS (tabla) ---------- */
+/* ---------- FACTURA: LÍNEAS ---------- */
 function findProducto(name){ return productos.find(p=>(p.name||'').toLowerCase()===String(name).toLowerCase()); }
 function addLinea(){
   const tb = $('#lineasBody'); if(!tb) return;
   const tr=document.createElement('tr');
   tr.innerHTML=`
-    <td><input class="name" list="productNamesList" placeholder="Producto" /></td>
+    <td><input class="name" list="productNamesList" placeholder="Producto (↓ para ver lista)" /></td>
     <td>
       <select class="mode">
         <option value="">—</option><option value="kg">kg</option><option value="unidad">unidad</option><option value="caja">caja</option>
@@ -354,7 +361,7 @@ function recalc(){
   $('#total').textContent = money(total);
   $('#pendiente').textContent = money(pendiente);
 
-  // estado automático sugerido
+  // estado sugerido
   if(total<=0){ $('#estado').value='pendiente'; }
   else if(pagadoTotal<=0){ $('#estado').value='pendiente'; }
   else if(pagadoTotal<total){ $('#estado').value='parcial'; }
@@ -413,7 +420,7 @@ function fillPrint(lines, totals, temp=null, f=null){
   $('#p-metodo').textContent = f?.metodo || $('#metodoPago')?.value || 'Efectivo';
   $('#p-obs').textContent = f?.obs || ($('#observaciones')?.value||'—');
 
-  // Generar QR (contenido: número, fecha, cliente, total y estado)
+  // QR con datos básicos
   try{
     const canvas = $('#p-qr');
     const numero = f?.numero || '(Sin guardar)';
@@ -457,7 +464,7 @@ $('#btnGuardar')?.addEventListener('click', ()=>{
   facturas.unshift(f); saveFacturas();
   pagosTemp = []; renderPagosTemp();
   alert(`Factura ${numero} guardada.`);
-  renderFacturas(); drawResumen(); renderPendientes(); drawKPIs(); drawCharts(); drawTop(); renderVentasCliente();
+  renderFacturas(); renderPendientes(); drawKPIs(); drawCharts(); drawTop(); renderVentasCliente(); drawResumen();
   fillPrint(ls,{subtotal,transporte,iva,total},null,f);
 });
 
@@ -476,9 +483,9 @@ $('#btnImprimir')?.addEventListener('click', ()=>{
   window.html2pdf().set(opt).from(element).save();
 });
 
-/* ---------- LISTA DE FACTURAS (estados editables) ---------- */
+/* ---------- LISTA DE FACTURAS ---------- */
 function badgeEstado(f){
-  const pend=f.totals?.pendiente||0, tot=f.totals?.total||0, pag=f.totals?.pagado||0;
+  const tot=f.totals?.total||0, pag=f.totals?.pagado||0;
   if(pag>=tot) return `<span class="state-badge state-green">Pagada</span>`;
   if(pag>0 && pag<tot) return `<span class="state-badge state-amber">Parcial (${money(pag)} / ${money(tot)})</span>`;
   return `<span class="state-badge state-red">Impagada</span>`;
@@ -546,7 +553,7 @@ function renderFacturas(){
 $('#filtroEstado')?.addEventListener('input', renderFacturas);
 $('#buscaCliente')?.addEventListener('input', renderFacturas);
 
-/* ---------- PENDIENTES (pestaña) ---------- */
+/* ---------- PENDIENTES ---------- */
 function renderPendientes(){
   const tb=$('#tblPendientes tbody'); if(!tb) return;
   tb.innerHTML='';
@@ -578,7 +585,6 @@ function renderPendientes(){
   tb.querySelectorAll('button').forEach(b=>{
     b.addEventListener('click', ()=>{
       const nombre=b.dataset.c;
-      // filtrar en facturas
       $('#buscaCliente').value=nombre;
       switchTab('facturas');
       renderFacturas();
@@ -611,7 +617,6 @@ function drawKPIs(){
   $('#vMes').textContent=money(mes);
   $('#vTotal').textContent=money(total);
 
-  // espejo en Resumen
   $('#rHoy').textContent=money(hoy);
   $('#rSemana').textContent=money(semana);
   $('#rMes').textContent=money(mes);
@@ -683,7 +688,7 @@ function renderVentasCliente(){
 
 /* ---------- BACKUP/RESTORE + EXPORTS ---------- */
 $('#btnBackup')?.addEventListener('click', ()=>{
-  const payload={clientes, productos, facturas, priceHist, fecha: todayISO(), version:'ARSLAN PRO V10.3'};
+  const payload={clientes, productos, facturas, priceHist, fecha: todayISO(), version:'ARSLAN PRO V10.4'};
   const filename=`backup-${fmtDateDMY(new Date())}.json`;
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
@@ -706,11 +711,11 @@ $('#btnRestore')?.addEventListener('click', ()=>{
   };
   inp.click();
 });
-$('#btnExportClientes')?.addEventListener('click', ()=>downloadJSON(clientes,'clientes-arslan-v103.json'));
+$('#btnExportClientes')?.addEventListener('click', ()=>downloadJSON(clientes,'clientes-arslan-v104.json'));
 $('#btnImportClientes')?.addEventListener('click', ()=>uploadJSON(arr=>{ if(Array.isArray(arr)){ clientes=uniqueByName(arr); save(K_CLIENTES,clientes); renderClientesSelect(); renderClientesLista(); } }));
-$('#btnExportProductos')?.addEventListener('click', ()=>downloadJSON(productos,'productos-arslan-v103.json'));
+$('#btnExportProductos')?.addEventListener('click', ()=>downloadJSON(productos,'productos-arslan-v104.json'));
 $('#btnImportProductos')?.addEventListener('click', ()=>uploadJSON(arr=>{ if(Array.isArray(arr)){ productos=arr; save(K_PRODUCTOS,productos); populateProductDatalist(); renderProductos(); } }));
-$('#btnExportFacturas')?.addEventListener('click', ()=>downloadJSON(facturas,'facturas-arslan-v103.json'));
+$('#btnExportFacturas')?.addEventListener('click', ()=>downloadJSON(facturas,'facturas-arslan-v104.json'));
 $('#btnImportFacturas')?.addEventListener('click', ()=>uploadJSON(arr=>{ if(Array.isArray(arr)){ facturas=arr; save(K_FACTURAS,facturas); renderFacturas(); renderPendientes(); drawKPIs(); drawCharts(); drawTop(); renderVentasCliente(); drawResumen(); } }));
 $('#btnExportVentas')?.addEventListener('click', exportVentasCSV);
 
@@ -746,26 +751,33 @@ $('#btnAddCliente')?.addEventListener('click', ()=>{
   const nif=prompt('NIF/CIF:')||''; const dir=prompt('Dirección:')||''; const tel=prompt('Teléfono:')||''; const email=prompt('Email:')||'';
   clientes.push({nombre,nif,dir,tel,email}); saveClientes(); renderClientesSelect(); renderClientesLista();
 });
-$('#buscarCliente')?.addEventListener('input', renderClientesLista());
+$('#buscarCliente')?.addEventListener('input', renderClientesLista);
 
-/* ---------- RENDER ALL ---------- */
+/* ---------- RESUMEN ---------- */
 function renderAll(){
   renderClientesSelect(); renderClientesLista();
   populateProductDatalist(); renderProductos(); renderFacturas(); renderPendientes();
   drawKPIs(); drawCharts(); drawTop(); renderVentasCliente(); drawResumen();
 }
-function drawResumen(){
-  // espejo de KPIs ya calculados en drawKPIs()
-  drawKPIs();
-}
+function drawResumen(){ drawKPIs(); }
 
 /* ---------- BOOT ---------- */
 (function boot(){
   seedClientesIfEmpty();
   seedProductsIfEmpty();
+
+  // proveedor por defecto (tus datos)
+  setProviderDefaultsIfEmpty();
+
+  // 5 líneas iniciales
   const tb=$('#lineasBody'); if(tb && tb.children.length===0){ for(let i=0;i<5;i++) addLinea(); }
+
   renderPagosTemp();
   renderAll(); recalc();
-  window.addEventListener('load', ()=>setTimeout(()=>{ renderAll(); recalc(); }, 500));
+
+  // verificación inicial tras cargar assets
+  window.addEventListener('load', ()=>setTimeout(()=>{ try{
+    populateProductDatalist(); renderProductos(); renderClientesSelect(); renderClientesLista(); renderFacturas(); renderPendientes(); drawKPIs(); drawCharts(); drawTop(); renderVentasCliente(); recalc();
+  }catch(e){ console.error('Init error',e); } }, 600));
 })();
 })();
