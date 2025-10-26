@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ARSLAN PRO · Facturación</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header><h1>ARSLAN PRO · Facturación</h1></header>
+
+  <main>
+    <section id="cliente">
+      <h2>Cliente</h2>
+      <input id="clienteNombre" placeholder="Nombre o empresa" />
+      <input id="clienteNIF" placeholder="NIF/CIF" />
+    </section>
+
+    <section id="lineas">
+      <h2>Productos</h2>
+      <div id="items"></div>
+      <button id="agregar">Añadir línea</button>
+    </section>
+
+    <section id="totales">
+      <label><input type="checkbox" id="transport10" /> +10% Transporte (si aplica)</label>
+      <div>Subtotal: <span id="subtotal">0,00 €</span></div>
+      <div>IVA (4% incluido/mostrado): <span id="iva">0,00 €</span></div>
+      <div><strong>Total: <span id="total">0,00 €</span></strong></div>
+      <button id="generarPDF">Generar PDF</button>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
