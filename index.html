@@ -338,4 +338,49 @@
 <script src="app.js"></script>
 </body>
 </html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ARSLAN PRO V10.4 KIWI Edition</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/png" href="logo-kiwi.png">
+</head>
+<body class="theme-light">
+  <header>
+    <div class="logo-area">
+      <img src="logo-kiwi.png" alt="Kiwi Logo" class="logo">
+      <h1>ARSLAN PRO V10.4 KIWI Edition</h1>
+    </div>
 
+    <nav class="tabs">
+      <button class="tab active" data-tab="factura">Factura</button>
+      <button class="tab" data-tab="clientes">Clientes</button>
+      <button class="tab" data-tab="facturas">Facturas</button>
+      <button class="tab" data-tab="resumen">Resumen</button>
+      <button class="tab" data-tab="productos">Productos</button>
+    </nav>
+
+    <div class="theme-selector">
+      <button id="btnTheme" title="Cambiar tema">🎨</button>
+      <div id="themeMenu" hidden>
+        <button data-theme="theme-light">🌞 Claro KIWI</button>
+        <button data-theme="theme-dark">🌙 Oscuro Pro</button>
+        <button data-theme="theme-gold">💛 Dorado Premium</button>
+        <button data-theme="theme-blue">🔵 Azul Ocean</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel active" data-tab-panel="factura">…</section>
+    <section class="panel" data-tab-panel="clientes">…</section>
+    <section class="panel" data-tab-panel="facturas">…</section>
+    <section class="panel" data-tab-panel="resumen">…</section>
+    <section class="panel" data-tab-panel="productos">…</section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
