@@ -1,12 +1,16 @@
-/* ARSLAN PRO V13 — Completo
+/* ARSLAN PRO V13 — Completo (patch 13.1)
    - Tabs por clic
    - Productos: mode, boxKg, price; sugerencias sin autocompletar; import/export
    - Clientes: alta/edita/borra; import/export
-   - Factura: líneas; caja => qty*boxKg*price; transporte +10%; IVA 4% mostrado; estados
+   - Factura: líneas; caja => qty*boxKg*price; transporte +10%; IVA 4% (incluido o añadido); estados
    - Historial de precios (últimos 10)
    - Facturas: lista con colores; ver/PDF; import/export
    - Resumen: total global, por cliente; reset deudas
    - localStorage: todo offline
+   - Nuevo:
+     * chkIvaIncluido afecta cálculos (incluido vs. añadido)
+     * exportClientesFacturados()
+     * cargarFacturaEnFormulario(numero)
 */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -16,15 +20,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const money = n => (isNaN(n)?0:n).toFixed(2).replace('.', ',') + " €";
   const parseNum = v => { const n = parseFloat(String(v).replace(',', '.')); return isNaN(n) ? 0 : n; };
   const escapeHTML = s => String(s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+  const safeJSON = (k, def) => { try{ const raw=localStorage.getItem(k); return raw?JSON.parse(raw):def; }catch{ return def; } };
 
   // Keys
   const K_CLIENTES='apv13_clientes', K_PRODUCTOS='apv13_productos', K_FACTURAS='apv13_facturas', K_PRICEHIST='apv13_pricehist';
 
   // Estado
-  let clientes = JSON.parse(localStorage.getItem(K_CLIENTES) || '[]');
-  let productos = JSON.parse(localStorage.getItem(K_PRODUCTOS) || '[]'); // {name, mode, boxKg, price}
-  let facturas  = JSON.parse(localStorage.getItem(K_FACTURAS)  || '[]');
-  let priceHist = JSON.parse(localStorage.getItem(K_PRICEHIST) || '{}'); // {name: [{price,date}, ...]}
+  let clientes = safeJSON(K_CLIENTES, []);
+  let productos = safeJSON(K_PRODUCTOS, []); // {name, mode, boxKg, price}
+  let facturas  = safeJSON(K_FACTURAS,  []);
+  let priceHist = safeJSON(K_PRICEHIST, {}); // {name: [{price,date}, ...]}
 
   // DOM: factura
   const lineasDiv = $('#lineas');
@@ -159,19 +164,19 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           const p = productos[i];
           const name = prompt('Nombre', p.name||'') ?? p.name;
-          const mode = prompt('Modo (kg/unidad/caja/manojo)', p.mode||'kg') ?? p.mode;
+          const mode = (prompt('Modo (kg/unidad/caja/manojo)', p.mode||'kg') ?? p.mode)||'kg';
           const boxKg = prompt('Kg por caja (si aplica, ej. 22)', p.boxKg??'');
           const boxKgNum = (boxKg===''||boxKg===null)?null:parseNum(boxKg);
           const price = prompt('Precio base (€ por unidad o €/kg si caja)', p.price!=null?p.price:'');
           const priceNum = (price===''||price===null)?null:parseNum(price);
-          productos[i]={name,mode,boxKg:boxKgNum,price:priceNum}; saveProductos(); renderProductos();
+          productos[i]={name,mode: String(mode).toLowerCase(),boxKg:boxKgNum,price:priceNum}; saveProductos(); renderProductos();
         }
       });
     });
   }
   btnAddProducto?.addEventListener('click', ()=>{
     const name = prompt('Nombre del producto:'); if(!name) return;
-    const mode = prompt('Modo (kg/unidad/caja/manojo)','kg')||'kg';
+    const mode = (prompt('Modo (kg/unidad/caja/manojo)','kg')||'kg').toLowerCase();
     const boxKg = prompt('Kg por caja (si aplica, ej. 22)',''); const boxKgNum = boxKg?parseNum(boxKg):null;
     const price = prompt('Precio base (€ por unidad o €/kg si caja)',''); const priceNum = price?parseNum(price):null;
     productos.push({name,mode,boxKg:boxKgNum,price:priceNum}); saveProductos(); renderProductos();
@@ -203,6 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
       matches.forEach(p=>{
         const last=lastPrice(p.name);
         const btn=document.createElement('button');
+        btn.type='button';
         btn.textContent = `${p.name} ${p.mode?`· ${p.mode}`:''} ${p.boxKg?`· ${p.boxKg}kg/caja`:''} ${p.price!=null?`· base ${money(p.price)}`:''} ${last?`· último ${money(last)}`:''}`;
         btn.addEventListener('click', ()=>{
           nameInp.value=p.name;
@@ -243,20 +249,25 @@ document.addEventListener('DOMContentLoaded', () => {
   function findProducto(name){ return productos.find(p=>(p.name||'').toLowerCase()===name.toLowerCase()); }
   function lineImporte(l){
     if(l.mode==='caja'){
-      const p=findProducto(l.name); const kg=p?.boxKg||0; return l.qty*kg*l.price;
+      const p=findProducto(l.name); const kg=p?.boxKg||0; return l.qty*kg*l.price; // precio es €/kg
     }
-    return l.qty*l.price;
+    return l.qty*l.price; // kg/unidad/manojo: precio por unidad de modo
   }
 
   /* ---------- CÁLCULO ---------- */
   function recalc(){
     const ls = getLineas();
     let subtotal=0; ls.forEach(l=> subtotal+=lineImporte(l));
-    const transporte = $('#chkTransporte').checked ? subtotal*0.10 : 0;
+
+    const transporte = chkTransporte?.checked ? subtotal*0.10 : 0;
     const baseMasTrans = subtotal + transporte;
-    const iva = baseMasTrans * 0.04; // solo informativo
-    const total = baseMasTrans;
-    const pagado = parseNum($('#pagado').value);
+
+    // IVA 4% — si "incluido" => solo informativo; si NO incluido => se suma al total
+    const ivaCalc = baseMasTrans * 0.04;
+    const iva = chkIvaIncluido?.checked ? ivaCalc : ivaCalc; // mismo valor mostrado
+    const total = chkIvaIncluido?.checked ? baseMasTrans : (baseMasTrans + ivaCalc);
+
+    const pagado = parseNum(pagadoInp.value);
     const pendiente = Math.max(0, total - pagado);
 
     subtotalEl.textContent = money(subtotal);
@@ -268,7 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     fillPrint(ls,{subtotal,transporte,iva,total});
   }
-  [chkTransporte, chkIvaIncluido, estado, pagadoInp].forEach(el=>el?.addEventListener('input', recalc));
+  [chkTransporte, chkIvaIncluido, estado, pagadoInp, metodoPago, observaciones].forEach(el=>el?.addEventListener('input', recalc));
 
   /* ---------- HISTORIAL PRECIOS ---------- */
   function savePriceHist(){ localStorage.setItem(K_PRICEHIST, JSON.stringify(priceHist)); }
@@ -457,10 +468,48 @@ document.addEventListener('DOMContentLoaded', () => {
     pIva.textContent = money(totals?.iva||0);
     pTot.textContent = money(totals?.total||0);
 
-    pEstado.textContent = factura?.estado || estado.value;
+    const ivaIncl = (factura?.ivaIncluido ?? chkIvaIncluido.checked);
+    pEstado.textContent = (factura?.estado || estado.value) + (ivaIncl ? ' · IVA incluido' : ' · IVA añadido');
     pMetodo.textContent = factura?.metodo || metodoPago.value;
     pObs.textContent = factura?.obs || (observaciones.value||'—');
   }
+
+  /* ---------- UTIL EXTRA ---------- */
+  // Exporta clientes con al menos 1 factura
+  function exportClientesFacturados(){
+    const set = new Set(facturas.map(f=>(f.cliente?.nombre||'').trim()).filter(Boolean));
+    const lista = clientes.filter(c=>set.has((c.nombre||'').trim()));
+    downloadJSON(lista, 'clientes-facturados-apv13.json');
+  }
+  // Cargar una factura existente al formulario (por número exacto)
+  function cargarFacturaEnFormulario(num){
+    const f = facturas.find(x=>x.numero===num);
+    if(!f){ alert('Factura no encontrada'); return; }
+    // Proveedor y cliente
+    ['nombre','nif','dir','tel','email'].forEach(k=>{
+      if(prov[k]) prov[k].value = f.proveedor?.[k]||'';
+      if(cli[k])  cli[k].value  = f.cliente?.[k]||'';
+    });
+    // Flags
+    chkTransporte.checked = !!f.transporte;
+    chkIvaIncluido.checked = !!f.ivaIncluido;
+    estado.value = f.estado || 'pendiente';
+    metodoPago.value = f.metodo || 'Efectivo';
+    observaciones.value = f.obs || '';
+    pagadoInp.value = (f.totals?.pagado ?? 0).toString().replace('.',',');
+
+    // Líneas
+    lineasDiv.innerHTML='';
+    (f.lineas||[]).forEach(l=> addLinea(l.name, l.mode, l.qty, l.price));
+    switchTab('factura'); recalc();
+    $('#formArea')?.scrollIntoView({behavior:'smooth'});
+  }
+
+  // Exponer helpers opcionales (útiles mientras no haya botones en HTML)
+  window.ARSLAN_PRO = {
+    exportClientesFacturados,
+    cargarFacturaEnFormulario
+  };
 
   /* ---------- UTIL JSON ---------- */
   function downloadJSON(obj, filename){
@@ -493,4 +542,3 @@ document.addEventListener('DOMContentLoaded', () => {
   if($$('.linea').length===0) addLinea();
   recalc();
 });
-
