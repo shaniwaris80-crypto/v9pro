@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ARSLAN PRO V14 · Facturación Frutería</title>
+  <title>ARSLAN PRO V15 · Facturación Frutería</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
@@ -14,7 +14,7 @@
     <div class="brand">
       <img src="logo-kiwi.png" alt="KIWI" class="logo" onerror="this.classList.add('fallback')">
       <div class="brand-text">
-        <h1>ARSLAN PRO V14</h1>
+        <h1>ARSLAN PRO V15</h1>
         <span>Gestión & Facturación de Frutería</span>
       </div>
     </div>
@@ -24,6 +24,7 @@
       <button class="tab" data-tab="facturas">Facturas</button>
       <button class="tab" data-tab="resumen">Resumen</button>
       <button class="tab" data-tab="productos">Productos</button>
+      <button class="tab" data-tab="estadisticas">Estadísticas</button>
     </nav>
   </header>
 
@@ -66,10 +67,16 @@
           </div>
         </div>
 
+        <!-- Cabecera de columnas -->
+        <div class="lineas-head">
+          <span>Producto</span><span>Tipo</span><span>Cant.</span><span>Peso bruto</span><span>Tara</span><span>Peso neto</span><span>Precio</span><span>Origen</span><span>Importe</span><span></span>
+        </div>
         <div id="lineas" class="lineas"></div>
         <div class="legend">
-          Cantidades sin decimales (unidades/cajas/manojos).  
-          Si el producto es <strong>caja</strong> con peso definido, el importe = <strong>cajas × kg/caja × €/kg</strong>.
+          <ul>
+            <li><strong>Peso neto</strong> = bruto − tara (si indicas peso). Si no, para <b>caja</b> usa <em>cant. × kg/caja</em>. Para <b>kg</b> usa la cantidad como kg. Para <b>unidad</b>, neto = cantidad.</li>
+            <li>El <b>Importe</b> usa <em>neto</em> cuando el tipo es <b>kg</b> o <b>caja</b>; y <em>cantidad</em> cuando es <b>unidad</b>.</li>
+          </ul>
         </div>
       </div>
 
@@ -129,7 +136,7 @@
           <div class="print-brand">
             <img src="logo-kiwi.png" alt="KIWI" class="logo" onerror="this.classList.add('fallback')">
             <div>
-              <h1>ARSLAN PRO V14</h1>
+              <h1>ARSLAN PRO V15</h1>
               <small>Factura</small>
             </div>
           </div>
@@ -154,24 +161,27 @@
           <thead>
             <tr>
               <th>Producto</th>
-              <th>Modo</th>
+              <th>Tipo</th>
               <th>Cant.</th>
+              <th>Peso neto</th>
               <th>Precio</th>
+              <th>Origen</th>
               <th>Importe</th>
             </tr>
           </thead>
           <tbody></tbody>
           <tfoot>
-            <tr><td colspan="4" class="right">Subtotal</td><td id="p-sub">0,00 €</td></tr>
-            <tr><td colspan="4" class="right">Transporte 10%</td><td id="p-tra">0,00 €</td></tr>
-            <tr><td colspan="4" class="right">IVA (4% mostrado)</td><td id="p-iva">0,00 €</td></tr>
-            <tr class="total"><td colspan="4" class="right">TOTAL</td><td id="p-tot">0,00 €</td></tr>
+            <tr><td colspan="6" class="right">Subtotal</td><td id="p-sub">0,00 €</td></tr>
+            <tr><td colspan="6" class="right">Transporte 10%</td><td id="p-tra">0,00 €</td></tr>
+            <tr><td colspan="6" class="right">IVA (4% mostrado)</td><td id="p-iva">0,00 €</td></tr>
+            <tr class="total"><td colspan="6" class="right">TOTAL</td><td id="p-tot">0,00 €</td></tr>
           </tfoot>
         </table>
 
         <div class="print-notes">
           <div><strong>Estado:</strong> <span id="p-estado">—</span> · <strong>Pago:</strong> <span id="p-metodo">—</span></div>
           <div><strong>Obs.:</strong> <span id="p-obs">—</span></div>
+          <small>El IVA (4%) se muestra pero está incluido. Si aplica, el transporte añade 10% sobre el subtotal.</small>
         </div>
       </section>
     </section>
@@ -212,10 +222,10 @@
       </div>
     </section>
 
-    <!-- RESUMEN -->
+    <!-- RESUMEN (Deudas) -->
     <section class="panel" data-tab-panel="resumen">
       <div class="card">
-        <h2>Resumen de deudas</h2>
+        <h2>Deudas</h2>
         <div class="rows compact">
           <div class="kv"><span>Total global pendiente</span> <strong id="resGlobal">0,00 €</strong></div>
         </div>
@@ -231,27 +241,43 @@
     <section class="panel" data-tab-panel="productos">
       <div class="card">
         <div class="header-row">
-          <h2>Productos (sugerencias)</h2>
+          <h2>Productos</h2>
           <div class="row-inline">
             <button id="btnAddProducto" class="btn">Añadir</button>
             <button id="btnExportProductos" class="btn ghost">Exportar JSON</button>
             <button id="btnImportProductos" class="btn ghost">Importar JSON</button>
           </div>
         </div>
+        <div class="table-head">
+          <span>Producto</span><span>Tipo</span><span>Kg/caja</span><span>Precio base</span><span>Origen</span><span></span>
+        </div>
         <div id="listaProductos" class="list"></div>
+      </div>
+    </section>
+
+    <!-- ESTADÍSTICAS -->
+    <section class="panel" data-tab-panel="estadisticas">
+      <div class="card">
+        <div class="header-row">
+          <h2>Estadísticas de ventas</h2>
+          <div class="row-inline">
+            <select id="range">
+              <option value="daily">Diaria (14 días)</option>
+              <option value="weekly">Semanal (12 semanas)</option>
+              <option value="monthly">Mensual (12 meses)</option>
+            </select>
+            <div class="kv"><span>Total generado:</span> <strong id="statTotal">0,00 €</strong></div>
+          </div>
+        </div>
+        <canvas id="chart" width="900" height="320" class="chart"></canvas>
       </div>
     </section>
   </main>
 
   <footer class="app-footer">
-    <small>ARSLAN PRO V14 — Blanco & Sombras Verdes — © 2025</small>
+    <small>ARSLAN PRO V15 — Blanco & Sombras Verdes — © 2025</small>
   </footer>
 
   <script src="app.js"></script>
 </body>
 </html>
-
-  <script src="app.js"></script>
-</body>
-</html>
-
