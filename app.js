@@ -1,12 +1,6 @@
-/* ARSLAN PRO V13 — Completo
-   - Tabs por clic
-   - Productos: mode, boxKg, price; sugerencias sin autocompletar; import/export
-   - Clientes: alta/edita/borra; import/export
-   - Factura: líneas; caja => qty*boxKg*price; transporte +10%; IVA 4% mostrado; estados
-   - Historial de precios (últimos 10)
-   - Facturas: lista con colores; ver/PDF; import/export
-   - Resumen: total global, por cliente; reset deudas
-   - localStorage: todo offline
+/* ARSLAN PRO V14
+   - Igual que V13 + catálogo inicial con NOMBRES (sin modos ni precios)
+   - El catálogo se precarga SOLO si no hay productos guardados (no duplica)
 */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -18,11 +12,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const escapeHTML = s => String(s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
 
   // Keys
-  const K_CLIENTES='apv13_clientes', K_PRODUCTOS='apv13_productos', K_FACTURAS='apv13_facturas', K_PRICEHIST='apv13_pricehist';
+  const K_CLIENTES='apv14_clientes', K_PRODUCTOS='apv14_productos', K_FACTURAS='apv14_facturas', K_PRICEHIST='apv14_pricehist';
 
   // Estado
   let clientes = JSON.parse(localStorage.getItem(K_CLIENTES) || '[]');
-  let productos = JSON.parse(localStorage.getItem(K_PRODUCTOS) || '[]'); // {name, mode, boxKg, price}
+  let productos = JSON.parse(localStorage.getItem(K_PRODUCTOS) || '[]'); // {name, mode?, boxKg?, price?}
   let facturas  = JSON.parse(localStorage.getItem(K_FACTURAS)  || '[]');
   let priceHist = JSON.parse(localStorage.getItem(K_PRICEHIST) || '{}'); // {name: [{price,date}, ...]}
 
@@ -121,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const nif = prompt('NIF/CIF:')||''; const dir=prompt('Dirección:')||''; const tel=prompt('Teléfono:')||''; const email=prompt('Email:')||'';
     clientes.push({nombre,nif,dir,tel,email}); saveClientes(); renderClientesSelect(); renderClientesLista();
   });
-  btnExportClientes?.addEventListener('click', ()=>downloadJSON(clientes,'clientes-apv13.json'));
+  btnExportClientes?.addEventListener('click', ()=>downloadJSON(clientes,'clientes-apv14.json'));
   btnImportClientes?.addEventListener('click', ()=>uploadJSON(arr=>{ if(Array.isArray(arr)){ clientes=arr; saveClientes(); renderClientesSelect(); renderClientesLista(); } }));
 
   selCliente?.addEventListener('change', ()=>{
@@ -132,8 +126,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ---------- PRODUCTOS ---------- */
   function saveProductos(){ localStorage.setItem(K_PRODUCTOS, JSON.stringify(productos)); }
-  function ensureProductos(){ if(!Array.isArray(productos)) productos=[]; saveProductos(); }
-  function lastPrice(name){ const arr = priceHist[name]; return arr?.length ? arr[0].price : null; }
+
+  // Tu lista (solo nombres)
+  const PRODUCT_NAMES = [
+    "GRANNY FRANCIA","MANZANA PINK LADY","MANDARINA COLOMBE","KIWI ZESPRI GOLD","PARAGUAYO","KIWI TOMASIN PLANCHA","PERA RINCON DEL SOTO","MELOCOTON PRIMERA","AGUACATE GRANEL","MARACUYÁ","MANZANA GOLDEN 24","PLATANO CANARIO PRIMERA","MANDARINA HOJA","MANZANA GOLDEN 2O","NARANJA TOMASIN","NECTARINA","NUECES","SANDIA","LIMON SEGUNDA","MANZANA FUJI","NARANAJA MESA SONRISA","JENGIBRE","BATATA","AJO PRIMERA","CEBOLLA NORMAL","CALABAZA GRANDE","PATATA LAVADA","TOMATE CHERRY RAMA","TOMATE CHERRY PERA","TOMATE DANIELA","TOMATE ROSA PRIMERA","CEBOLLINO","TOMATE ASURCADO MARRON","TOMATE RAMA","PIMIENTO PADRON","ZANAHORIA","PEPINO","CEBOLLETA","PUERROS","BROCOLI","JUDIA VERDE","BERENJENA","PIMIENTO ITALIANO VERDE","PIMIENTO ITALIANO ROJO","CHAMPIÑON","UVA ROJA","UVA BLANCA","ALCACHOFA","CALABACIN","COLIFLOR","BATAVIA","ICEBERG","MANDARINA SEGUNDA","MANZANA GOLDEN 28","NARANJA ZUMO","KIWI SEGUNDA","MANZANA ROYAL GALA 24","PLATANO CANARIO SUELTO","CEREZA","FRESAS","ARANDANOS","ESPINACA","PEREJIL","CILANTRO","ACELGAS","PIMIENTO VERDE","PIMIENTO ROJO","MACHO VERDE","MACHO MADURO","YUCA","AVOCADO","CEBOLLA ROJA","CILANTRO","MENTA","HABANERO","RABANITOS","POMELO","PAPAYA","REINETA 28","NISPERO","ALBARICOQUE","TOMATE PERA","TOMATE BOLA","TOMATE PINK","VALVENOSTA GOLDEN","MELOCOTON ROJO","MELON GALIA","APIO","NARANJA SANHUJA","LIMON PRIMERA","MANGO","MELOCOTON AMARILLO","VALVENOSTA ROJA","PIÑA","NARANJA HOJA","PERA CONFERENCIA SEGUNDA","CEBOLLA DULCE","TOMATE ASURCADO AZUL","ESPARRAGOS BLANCOS","ESPARRAGOS TRIGUEROS","REINETA PRIMERA","AGUACATE PRIMERA","COCO","NECTARINA SEGUNDA","REINETA 24","NECTARINA CARNE BLANCA","GUINDILLA","REINETA VERDE","PATATA 25KG","PATATA 5 KG","TOMATE RAFF","REPOLLO","KIWI ZESPRI","PARAGUAYO SEGUNDA","MELON","REINETA 26","PLATANO CANARIO SUELTO","TOMATE ROSA","MANZANA CRIPS","ALOE VERA PIEZAS","TOMATE ENSALADA","PATATA 10KG","MELON BOLLO","CIRUELA ROJA","LIMA","GUINEO VERDE","SETAS","BANANA","BONIATO","FRAMBUESA","BREVAS","PERA AGUA","YAUTIA","YAME","OKRA","MANZANA MELASSI","CACAHUETE","SANDIA NEGRA","SANDIA RAYADA","HIGOS","KUMATO","KIWI CHILE","MELOCOTON AMARILLO SEGUNDA","HIERBABUENA","REMOLACHA","LECHUGA ROMANA","CEREZA","KAKI","CIRUELA CLAUDIA","PERA LIMONERA","CIRUELA AMARILLA","HIGOS BLANCOS","UVA ALVILLO","LIMON EXTRA","PITAHAYA ROJA","HIGO CHUMBO","CLEMENTINA","GRANADA","NECTARINA PRIMERA BIS","CHIRIMOYA","UVA CHELVA","PIMIENTO CALIFORNIA VERDE","KIWI TOMASIN","PIMIENTO CALIFORNIA ROJO","MANDARINA SATSUMA","CASTAÑA","CAKI","MANZANA KANZI","PERA ERCOLINA","NABO","UVA ALVILLO NEGRA","CHAYOTE","ROYAL GALA 28","MANDARINA PRIMERA","PIMIENTO PINTON","MELOCOTON AMARILLO DE CALANDA","HINOJOS","MANDARINA DE HOJA","UVA ROJA PRIMERA","UVA BLANCA PRIMERA"
+  ];
+
+  function seedProductsIfEmpty(){
+    if(Array.isArray(productos) && productos.length>0) return; // ya tienes productos → no tocar
+    productos = PRODUCT_NAMES.map(n => ({ name: n })); // solo nombre
+    saveProductos();
+  }
+
   function renderProductos(){
     listaProductos.innerHTML=''; if(productos.length===0){ listaProductos.innerHTML=`<div class="item">Sin productos. Usa “Añadir” o Importar JSON.</div>`; return; }
     productos.forEach((p,idx)=>{
@@ -143,7 +147,12 @@ document.addEventListener('DOMContentLoaded', () => {
       div.innerHTML = `
         <div>
           <strong>${escapeHTML(p.name)}</strong>
-          <div class="meta">modo: ${escapeHTML(p.mode||'-')} · kg/caja: ${p.boxKg??'-'} · precio base: ${p.price!=null?money(p.price):'-'} ${last?`· último: ${money(last)}`:''}</div>
+          <div class="meta">
+            ${p.mode?`modo: ${escapeHTML(p.mode)} · `:''}
+            ${p.boxKg!=null?`kg/caja: ${p.boxKg} · `:''}
+            ${p.price!=null?`precio base: ${money(p.price)} · `:''}
+            ${last?`último: ${money(last)}`:''}
+          </div>
         </div>
         <div>
           <button class="btn" data-e="edit" data-i="${idx}">Editar</button>
@@ -159,25 +168,25 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           const p = productos[i];
           const name = prompt('Nombre', p.name||'') ?? p.name;
-          const mode = prompt('Modo (kg/unidad/caja/manojo)', p.mode||'kg') ?? p.mode;
-          const boxKg = prompt('Kg por caja (si aplica, ej. 22)', p.boxKg??'');
+          const mode = prompt('Modo por defecto (kg/unidad/caja/manojo) — opcional', p.mode||'') || null;
+          const boxKg = prompt('Kg por caja (si aplica) — opcional', p.boxKg??'');
           const boxKgNum = (boxKg===''||boxKg===null)?null:parseNum(boxKg);
-          const price = prompt('Precio base (€ por unidad o €/kg si caja)', p.price!=null?p.price:'');
+          const price = prompt('Precio base (€ por unidad o €/kg si caja) — opcional', p.price!=null?p.price:'');
           const priceNum = (price===''||price===null)?null:parseNum(price);
-          productos[i]={name,mode,boxKg:boxKgNum,price:priceNum}; saveProductos(); renderProductos();
+          productos[i]={name, mode:mode||null, boxKg:boxKgNum, price:priceNum}; saveProductos(); renderProductos();
         }
       });
     });
   }
+  function saveProductosAndRender(){ saveProductos(); renderProductos(); }
   btnAddProducto?.addEventListener('click', ()=>{
     const name = prompt('Nombre del producto:'); if(!name) return;
-    const mode = prompt('Modo (kg/unidad/caja/manojo)','kg')||'kg';
-    const boxKg = prompt('Kg por caja (si aplica, ej. 22)',''); const boxKgNum = boxKg?parseNum(boxKg):null;
-    const price = prompt('Precio base (€ por unidad o €/kg si caja)',''); const priceNum = price?parseNum(price):null;
-    productos.push({name,mode,boxKg:boxKgNum,price:priceNum}); saveProductos(); renderProductos();
+    productos.push({name}); saveProductosAndRender();
   });
-  btnExportProductos?.addEventListener('click', ()=>downloadJSON(productos,'productos-apv13.json'));
-  btnImportProductos?.addEventListener('click', ()=>uploadJSON(arr=>{ if(Array.isArray(arr)){ productos=arr; saveProductos(); renderProductos(); } }));
+  btnExportProductos?.addEventListener('click', ()=>downloadJSON(productos,'productos-apv14.json'));
+  btnImportProductos?.addEventListener('click', ()=>uploadJSON(arr=>{ if(Array.isArray(arr)){ productos=arr; saveProductosAndRender(); } }));
+
+  function lastPrice(name){ const arr = priceHist[name]; return arr?.length ? arr[0].price : null; }
 
   /* ---------- SUGERENCIAS & LÍNEAS ---------- */
   function lineaHTML(name='', mode='', qty=1, price=0){
@@ -197,16 +206,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     nameInp.addEventListener('input', ()=>{
       const q = nameInp.value.trim().toLowerCase(); if(!q){ list.hidden=true; list.innerHTML=''; return; }
-      const matches = productos.filter(p=>p.name.toLowerCase().includes(q)).slice(0,10);
+      const matches = productos.filter(p=>p.name.toLowerCase().includes(q)).slice(0,12);
       if(matches.length===0){ list.hidden=true; list.innerHTML=''; return; }
       list.innerHTML='';
       matches.forEach(p=>{
         const last=lastPrice(p.name);
         const btn=document.createElement('button');
-        btn.textContent = `${p.name} ${p.mode?`· ${p.mode}`:''} ${p.boxKg?`· ${p.boxKg}kg/caja`:''} ${p.price!=null?`· base ${money(p.price)}`:''} ${last?`· último ${money(last)}`:''}`;
+        btn.textContent = `${p.name}${p.mode?` · ${p.mode}`:''}${p.boxKg?` · ${p.boxKg}kg/caja`:''}${p.price!=null?` · base ${money(p.price)}`:''}${last?` · último ${money(last)}`:''}`;
         btn.addEventListener('click', ()=>{
           nameInp.value=p.name;
-          if(!modeInp.value) modeInp.value=p.mode||'';
+          if(!modeInp.value && p.mode) modeInp.value=p.mode;
           if(p.price!=null && !priceInp.value) priceInp.value=String(p.price).replace('.',',');
           list.hidden=true; showPricePanel(p.name); recalc();
         });
@@ -381,7 +390,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   [filtroEstado, buscaCliente].forEach(el=>el?.addEventListener('input', renderFacturas));
-  btnExportFacturas?.addEventListener('click', ()=>downloadJSON(facturas,'facturas-apv13.json'));
+  btnExportFacturas?.addEventListener('click', ()=>downloadJSON(facturas,'facturas-apv14.json'));
   btnImportFacturas?.addEventListener('click', ()=>uploadJSON(arr=>{ if(Array.isArray(arr)){ facturas=arr; saveFacturas(); renderFacturas(); renderResumen(); } }));
 
   /* ---------- RESUMEN ---------- */
@@ -483,9 +492,9 @@ document.addEventListener('DOMContentLoaded', () => {
       {nombre:'Riviera', nif:'B16794893', dir:'Paseo del Espolón, Burgos', tel:'', email:''},
       {nombre:'Alesal Pan y Café S.L', nif:'B09582420', dir:'C/ San Lesmes 1', tel:'', email:''}
     ];
-    localStorage.setItem(K_CLIENTES, JSON.stringify(clientes));
+    saveClientes();
   }
-  ensureProductos();
+  seedProductsIfEmpty(); // ← carga tu lista solo la primera vez
 
   renderClientesSelect(); renderClientesLista();
   renderProductos(); renderFacturas(); renderResumen();
@@ -493,4 +502,3 @@ document.addEventListener('DOMContentLoaded', () => {
   if($$('.linea').length===0) addLinea();
   recalc();
 });
-
