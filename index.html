@@ -1,4 +1,17 @@
 <!DOCTYPE html>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register('/sw.js');
+      console.log('Service Worker registrado:', reg.scope);
+    } catch (err) {
+      console.warn('Error registrando SW:', err);
+    }
+  });
+}
+</script>
+
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
